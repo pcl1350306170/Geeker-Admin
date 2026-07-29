@@ -1,48 +1,7 @@
-import { isArray } from "@/utils/is";
 import { FieldNamesProps } from "@/components/ProTable/interface";
+import { isArray } from "@/utils/is";
 
 const mode = import.meta.env.VITE_ROUTER_MODE;
-
-/**
- * @description 获取localStorage
- * @param {String} key Storage名称
- * @returns {String}
- */
-export function localGet(key: string) {
-  const value = window.localStorage.getItem(key);
-  try {
-    return JSON.parse(window.localStorage.getItem(key) as string);
-  } catch (error) {
-    return value;
-  }
-}
-
-/**
- * @description 存储localStorage
- * @param {String} key Storage名称
- * @param {*} value Storage值
- * @returns {void}
- */
-export function localSet(key: string, value: any) {
-  window.localStorage.setItem(key, JSON.stringify(value));
-}
-
-/**
- * @description 清除localStorage
- * @param {String} key Storage名称
- * @returns {void}
- */
-export function localRemove(key: string) {
-  window.localStorage.removeItem(key);
-}
-
-/**
- * @description 清除所有localStorage
- * @returns {void}
- */
-export function localClear() {
-  window.localStorage.clear();
-}
 
 /**
  * @description 判断数据类型
@@ -164,7 +123,7 @@ export function getFlatMenuList(menuList: Menu.MenuOptions[]): Menu.MenuOptions[
 export function getShowMenuList(menuList: Menu.MenuOptions[]) {
   let newMenuList: Menu.MenuOptions[] = JSON.parse(JSON.stringify(menuList));
   return newMenuList.filter(item => {
-    item.children?.length && (item.children = getShowMenuList(item.children));
+    if (item.children?.length) item.children = getShowMenuList(item.children);
     return !item.meta?.isHide;
   });
 }
@@ -223,8 +182,8 @@ export function findMenuByPath(menuList: Menu.MenuOptions[], path: string): Menu
  * */
 export function getKeepAliveRouterName(menuList: Menu.MenuOptions[], keepAliveNameArr: string[] = []) {
   menuList.forEach(item => {
-    item.meta.isKeepAlive && item.name && keepAliveNameArr.push(item.name);
-    item.children?.length && getKeepAliveRouterName(item.children, keepAliveNameArr);
+    if (item.meta.isKeepAlive && item.name) keepAliveNameArr.push(item.name);
+    if (item.children?.length) getKeepAliveRouterName(item.children, keepAliveNameArr);
   });
   return keepAliveNameArr;
 }

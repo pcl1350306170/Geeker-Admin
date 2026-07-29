@@ -132,14 +132,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
 import { storeToRefs } from "pinia";
-import { useTheme } from "@/hooks/useTheme";
-import { useGlobalStore } from "@/stores/modules/global";
-import { LayoutType } from "@/stores/interface";
-import { DEFAULT_PRIMARY } from "@/config";
-import mittBus from "@/utils/mittBus";
+import { ref } from "vue";
+
 import SwitchDark from "@/components/SwitchDark/index.vue";
+import { DEFAULT_PRIMARY } from "@/config";
+import { useTheme } from "@/hooks/useTheme";
+import { LayoutType } from "@/stores/interface";
+import { useGlobalStore } from "@/stores/modules/global";
+import mittBus from "@/utils/mittBus";
 
 const { changePrimary, changeGreyOrWeak, setAsideTheme, setHeaderTheme } = useTheme();
 
@@ -187,5 +188,5 @@ mittBus.on("openThemeDrawer", () => (drawerVisible.value = true));
 </script>
 
 <style scoped lang="scss">
-@import "./index.scss";
+@use "./index";
 </style>

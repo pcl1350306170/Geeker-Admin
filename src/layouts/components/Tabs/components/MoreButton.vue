@@ -33,11 +33,12 @@
 
 <script setup lang="ts">
 import { inject, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
+
 import { HOME_URL } from "@/config";
-import { useTabsStore } from "@/stores/modules/tabs";
 import { useGlobalStore } from "@/stores/modules/global";
 import { useKeepAliveStore } from "@/stores/modules/keepAlive";
-import { useRoute, useRouter } from "vue-router";
+import { useTabsStore } from "@/stores/modules/tabs";
 
 const route = useRoute();
 const router = useRouter();
@@ -46,15 +47,23 @@ const globalStore = useGlobalStore();
 const keepAliveStore = useKeepAliveStore();
 
 // refresh current page
-const refreshCurrentPage: Function = inject("refresh") as Function;
+const refreshCurrentPage = inject<(val: boolean) => void>("refresh");
+
 const refresh = () => {
   setTimeout(() => {
-    route.meta.isKeepAlive && keepAliveStore.removeKeepAliveName(route.fullPath as string);
-    refreshCurrentPage(false);
-    nextTick(() => {
-      route.meta.isKeepAlive && keepAliveStore.addKeepAliveName(route.fullPath as string);
-      refreshCurrentPage(true);
-    });
+    if (route.meta.isKeepAlive) {
+      keepAliveStore.removeKeepAliveName(route.fullPath as string);
+    }
+
+    if (refreshCurrentPage) {
+      refreshCurrentPage(false);
+      nextTick(() => {
+        if (route.meta.isKeepAlive) {
+          keepAliveStore.addKeepAliveName(route.fullPath as string);
+        }
+        refreshCurrentPage(true);
+      });
+    }
   }, 0);
 };
 
@@ -77,5 +86,5 @@ const closeAllTab = () => {
 </script>
 
 <style scoped lang="scss">
-@import "../index.scss";
+@use "../index";
 </style>

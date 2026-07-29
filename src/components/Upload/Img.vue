@@ -48,14 +48,15 @@
 </template>
 
 <script setup lang="ts" name="UploadImg">
-import { ref, computed, inject } from "vue";
-import { generateUUID } from "@/utils";
-import { uploadImg } from "@/api/modules/upload";
-import { ElNotification, formContextKey, formItemContextKey } from "element-plus";
 import type { UploadProps, UploadRequestOptions } from "element-plus";
+import { ElNotification, formContextKey, formItemContextKey } from "element-plus";
+import { computed, inject, ref } from "vue";
+
+import { uploadImg } from "@/api/modules/upload";
+import { generateUUID } from "@/utils";
 
 interface UploadFileProps {
-  imageUrl: string; // 图片地址 ==> 必传
+  imageUrl?: string; // 图片地址 ==> 非必传
   api?: (params: any) => Promise<any>; // 上传图片的 api 方法，一般项目上传都是同一个 api 方法，在组件里直接引入即可 ==> 非必传
   drag?: boolean; // 是否支持拖拽上传 ==> 非必传（默认为 true）
   disabled?: boolean; // 是否禁用上传组件 ==> 非必传（默认为 false）
@@ -107,7 +108,9 @@ const handleHttpUpload = async (options: UploadRequestOptions) => {
     const { data } = await api(formData);
     emit("update:imageUrl", data.fileUrl);
     // 调用 el-form 内部的校验方法（可自动校验）
-    formItemContext?.prop && formContext?.validateField([formItemContext.prop as string]);
+    if (formItemContext?.prop) {
+      formContext?.validateField([formItemContext.prop as string]);
+    }
   } catch (error) {
     options.onError(error as any);
   }
@@ -125,7 +128,9 @@ const deleteImg = () => {
  * */
 const editImg = () => {
   const dom = document.querySelector(`#${uuid.value} .el-upload__input`);
-  dom && dom.dispatchEvent(new MouseEvent("click"));
+  if (dom) {
+    dom.dispatchEvent(new MouseEvent("click"));
+  }
 };
 
 /**

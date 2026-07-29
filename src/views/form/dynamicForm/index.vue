@@ -46,8 +46,8 @@
 </template>
 
 <script setup lang="ts" name="dynamicForm">
-import { reactive, ref } from "vue";
 import type { FormInstance } from "element-plus";
+import { reactive, ref } from "vue";
 
 const formRef = ref<FormInstance>();
 const dynamicValidateForm = reactive<{
@@ -100,5 +100,5 @@ const resetForm = (formEl: FormInstance | undefined) => {
 </script>
 
 <style scoped lang="scss">
-@import "./index.scss";
+@use "./index";
 </style>

@@ -7,9 +7,10 @@
 
 <script setup lang="ts" name="menu222">
 import { ref } from "vue";
+
 const value = ref<string>("");
 </script>
 
 <style scoped lang="scss">
-@import "./index.scss";
+@use "./index";
 </style>

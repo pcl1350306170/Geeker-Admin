@@ -6,29 +6,30 @@
 
 <script setup lang="ts" name="Grid">
 import {
-  ref,
-  watch,
-  useSlots,
   computed,
-  provide,
+  onActivated,
   onBeforeMount,
+  onDeactivated,
   onMounted,
   onUnmounted,
-  onDeactivated,
-  onActivated,
+  provide,
+  ref,
+  useSlots,
+  VNode,
   VNodeArrayChildren,
-  VNode
+  watch
 } from "vue";
+
 import type { BreakPoint } from "./interface/index";
 
-type Props = {
+type GridProps = {
   cols?: number | Record<BreakPoint, number>;
   collapsed?: boolean;
   collapsedRows?: number;
   gap?: [number, number] | number;
 };
 
-const props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<GridProps>(), {
   cols: () => ({ xs: 1, sm: 2, md: 2, lg: 3, xl: 4 }),
   collapsed: false,
   collapsedRows: 1,
@@ -125,8 +126,8 @@ const findIndex = () => {
       return prev;
     }, 0);
     if (!find) hiddenIndex.value = -1;
-  } catch (e) {
-    // console.warn(e);
+  } catch (error) {
+    console.log(error);
   }
 };
 

@@ -15,6 +15,7 @@
 
 <script setup lang="ts" name="Pagination">
 import { useGlobalStore } from "@/stores/modules/global";
+
 const globalStore = useGlobalStore();
 
 interface Pageable {

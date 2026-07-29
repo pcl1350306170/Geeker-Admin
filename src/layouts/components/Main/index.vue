@@ -16,14 +16,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeUnmount, provide, watch, h } from "vue";
-import { storeToRefs } from "pinia";
 import { useDebounceFn } from "@vueuse/core";
+import { storeToRefs } from "pinia";
+import { h, onBeforeUnmount, provide, ref, watch } from "vue";
+
+import Footer from "@/layouts/components/Footer/index.vue";
+import Tabs from "@/layouts/components/Tabs/index.vue";
 import { useGlobalStore } from "@/stores/modules/global";
 import { useKeepAliveStore } from "@/stores/modules/keepAlive";
+
 import Maximize from "./components/Maximize.vue";
-import Tabs from "@/layouts/components/Tabs/index.vue";
-import Footer from "@/layouts/components/Footer/index.vue";
 
 const globalStore = useGlobalStore();
 const { maximize, isCollapse, layout, tabs, footer } = storeToRefs(globalStore);
@@ -84,5 +86,5 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
-@import "./index.scss";
+@use "./index";
 </style>

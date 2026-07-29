@@ -21,11 +21,12 @@
 </template>
 
 <script setup lang="ts" name="menuMange">
+import { CirclePlus, Delete, EditPen } from "@element-plus/icons-vue";
 import { ref } from "vue";
-import { ColumnProps } from "@/components/ProTable/interface";
-import { Delete, EditPen, CirclePlus } from "@element-plus/icons-vue";
+
 import authMenuList from "@/assets/json/authMenuList.json";
 import ProTable from "@/components/ProTable/index.vue";
+import { ColumnProps } from "@/components/ProTable/interface";
 
 const proTable = ref();
 

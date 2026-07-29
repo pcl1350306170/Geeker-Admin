@@ -1,6 +1,6 @@
 <template>
   <div class="dataScreen-container">
-    <div class="dataScreen-content" ref="dataScreenRef">
+    <div ref="dataScreenRef" class="dataScreen-content">
       <div class="dataScreen-header">
         <div class="header-lf">
           <span class="header-screening" @click="router.push(HOME_URL)">首页</span>
@@ -110,9 +110,12 @@
 </template>
 
 <script setup lang="ts" name="dataScreen">
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import { HOME_URL } from "@/config";
+import dayjs from "dayjs";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+
+import { HOME_URL } from "@/config";
+
 import AgeRatioChart from "./components/AgeRatioChart.vue";
 import AnnualUseChart from "./components/AnnualUseChart.vue";
 import ChinaMapChart from "./components/ChinaMapChart.vue";
@@ -121,7 +124,6 @@ import MaleFemaleRatioChart from "./components/MaleFemaleRatioChart.vue";
 import OverNext30Chart from "./components/OverNext30Chart.vue";
 import PlatformSourceChart from "./components/PlatformSourceChart.vue";
 import RealTimeAccessChart from "./components/RealTimeAccessChart.vue";
-import dayjs from "dayjs";
 
 const router = useRouter();
 const dataScreenRef = ref<HTMLElement | null>(null);
@@ -162,5 +164,5 @@ onBeforeUnmount(() => {
 });
 </script>
 <style lang="scss" scoped>
-@import "./index.scss";
+@use "./index";
 </style>

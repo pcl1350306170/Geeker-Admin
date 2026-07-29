@@ -12,4 +12,5 @@ dist
 .local
 /bin
 /src/mock/*
+/src/assets/mock/**
 stats.html

@@ -1,10 +1,11 @@
-import { defineConfig, loadEnv, ConfigEnv, UserConfig } from "vite";
-import { resolve } from "path";
-import { wrapperEnv } from "./build/getEnv";
-import { createProxy } from "./build/proxy";
-import { createVitePlugins } from "./build/plugins";
-import pkg from "./package.json";
 import dayjs from "dayjs";
+import { resolve } from "path";
+import { ConfigEnv, defineConfig, loadEnv, UserConfig } from "vite";
+
+import { wrapperEnv } from "./build/getEnv";
+import { createVitePlugins } from "./build/plugins";
+import { createProxy } from "./build/proxy";
+import pkg from "./package.json";
 
 const { dependencies, devDependencies, name, version } = pkg;
 const __APP_INFO__ = {
@@ -33,7 +34,7 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
     css: {
       preprocessorOptions: {
         scss: {
-          additionalData: `@import "@/styles/var.scss";`
+          additionalData: `@use "@/styles/var";`
         }
       }
     },
@@ -46,9 +47,9 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
       proxy: createProxy(viteEnv.VITE_PROXY)
     },
     plugins: createVitePlugins(viteEnv),
-    esbuild: {
-      pure: viteEnv.VITE_DROP_CONSOLE ? ["console.log", "debugger"] : []
-    },
+    // esbuild: {
+    //   pure: viteEnv.VITE_DROP_CONSOLE ? ["console.log", "debugger"] : []
+    // },
     build: {
       outDir: "dist",
       minify: "esbuild",

@@ -1,4 +1,4 @@
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 
 /**
  * @description 表格多选数据操作
@@ -21,7 +21,11 @@ export const useSelection = (rowKey: string = "id") => {
    * @return void
    */
   const selectionChange = (rowArr: { [key: string]: any }[]) => {
-    rowArr.length ? (isSelected.value = true) : (isSelected.value = false);
+    if (rowArr.length) {
+      isSelected.value = true;
+    } else {
+      isSelected.value = false;
+    }
     selectedList.value = rowArr;
   };
 

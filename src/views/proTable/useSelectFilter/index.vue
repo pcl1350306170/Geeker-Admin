@@ -40,44 +40,70 @@
   </div>
 </template>
 <script setup lang="ts" name="useSelectFilter">
-import { ref, reactive, onMounted, watch } from "vue";
-import { User } from "@/api/interface";
+import { CirclePlus, Delete, Download, EditPen, Pointer, Refresh, Upload, View } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { useHandleData } from "@/hooks/useHandleData";
-import { useDownload } from "@/hooks/useDownload";
-import { genderType, userStatus } from "@/utils/dict";
-import ProTable from "@/components/ProTable/index.vue";
-import TreeFilter from "@/components/TreeFilter/index.vue";
-import ImportExcel from "@/components/ImportExcel/index.vue";
-import UserDrawer from "@/views/proTable/components/UserDrawer.vue";
-import SelectFilter from "@/components/SelectFilter/index.vue";
-import { ProTableInstance, ColumnProps } from "@/components/ProTable/interface";
-import { CirclePlus, Delete, EditPen, Pointer, Download, Upload, View, Refresh } from "@element-plus/icons-vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+
+import { User } from "@/api/interface";
 import {
-  getUserList,
+  addUser,
+  batchAddUser,
   deleteUser,
   editUser,
-  addUser,
-  resetUserPassWord,
   exportUserInfo,
-  BatchAddUser,
   getUserDepartment,
-  getUserRole
+  getUserList,
+  getUserRole,
+  resetUserPassWord
 } from "@/api/modules/user";
+import ImportExcel from "@/components/ImportExcel/index.vue";
+import ProTable from "@/components/ProTable/index.vue";
+import { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
+import SelectFilter from "@/components/SelectFilter/index.vue";
+import TreeFilter from "@/components/TreeFilter/index.vue";
+import { useDownload } from "@/hooks/useDownload";
+import { useHandleData } from "@/hooks/useHandleData";
+import { genderType, userStatus } from "@/utils/dict";
+import UserDrawer from "@/views/proTable/components/UserDrawer.vue";
 
 // ProTable 实例
 const proTable = ref<ProTableInstance>();
+
+// 默认 selectFilter 参数
+const selectFilterValues = ref({ userStatus: "2", userRole: ["1", "3"] });
+const changeSelectFilter = (value: typeof selectFilterValues.value) => {
+  ElMessage.success("请注意查看请求参数变化 🤔");
+  proTable.value!.pageable.pageNum = 1;
+  selectFilterValues.value = value;
+};
+
+// 默认 treeFilter 参数
+const treeFilterValues = reactive({ departmentId: ["11"] });
+const changeTreeFilter = (val: string[]) => {
+  ElMessage.success("请注意查看请求参数变化 🤔");
+  proTable.value!.pageable.pageNum = 1;
+  treeFilterValues.departmentId = val;
+};
+
+const searchRule = computed<any>(() => {
+  return selectFilterValues.value.userStatus === "1" ? { el: "input" } : "";
+});
 
 // 表格配置项
 const columns = reactive<ColumnProps<User.ResUserList>[]>([
   { type: "radio", label: "单选", width: 80 },
   { type: "index", label: "#", width: 80 },
-  { prop: "username", label: "用户姓名", width: 120 },
-  { prop: "gender", label: "性别", width: 120, sortable: true, enum: genderType },
-  { prop: "idCard", label: "身份证号" },
-  { prop: "email", label: "邮箱" },
-  { prop: "address", label: "居住地址" },
-  { prop: "status", label: "用户状态", width: 120, sortable: true, tag: true, enum: userStatus },
+  {
+    prop: "username",
+    label: "用户姓名",
+    width: 120,
+    search: searchRule.value
+  },
+  { prop: "gender", label: "性别", width: 120, sortable: true, enum: genderType, search: { el: "select" } },
+  { prop: "idCard", label: "身份证号", search: { el: "input" } },
+  { prop: "email", label: "邮箱", search: { el: "input" } },
+  { prop: "address", label: "居住地址", search: { el: "input" } },
+  { prop: "status", label: "用户状态", width: 120, sortable: true, tag: true, enum: userStatus, search: { el: "select" } },
   { prop: "createTime", label: "创建时间", width: 180, sortable: true },
   { prop: "operation", label: "操作", width: 330, fixed: "right" }
 ]);
@@ -109,22 +135,6 @@ onMounted(() => getUserRoleDict());
 const getUserRoleDict = async () => {
   const { data } = await getUserRole();
   selectFilterData[1].options = data as any;
-};
-
-// 默认 selectFilter 参数
-const selectFilterValues = ref({ userStatus: "2", userRole: ["1", "3"] });
-const changeSelectFilter = (value: typeof selectFilterValues.value) => {
-  ElMessage.success("请注意查看请求参数变化 🤔");
-  proTable.value!.pageable.pageNum = 1;
-  selectFilterValues.value = value;
-};
-
-// 默认 treeFilter 参数
-const treeFilterValues = reactive({ departmentId: ["11"] });
-const changeTreeFilter = (val: string[]) => {
-  ElMessage.success("请注意查看请求参数变化 🤔");
-  proTable.value!.pageable.pageNum = 1;
-  treeFilterValues.departmentId = val;
 };
 
 // 选择行
@@ -163,7 +173,7 @@ const batchAdd = () => {
   const params = {
     title: "用户",
     tempApi: exportUserInfo,
-    importApi: BatchAddUser,
+    importApi: batchAddUser,
     getTableList: proTable.value?.getTableList
   };
   dialogRef.value?.acceptParams(params);

@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 
 /**
  * @description 网络是否可用
@@ -9,7 +9,11 @@ export const useOnline = () => {
     online.value = typeof val == "boolean" ? val : val.target.online;
   };
   // 在页面加载后，设置正确的网络状态
-  navigator.onLine ? showStatus(true) : showStatus(false);
+  if (navigator.onLine) {
+    showStatus(true);
+  } else {
+    showStatus(false);
+  }
 
   onMounted(() => {
     // 开始监听网络状态的变化

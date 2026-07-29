@@ -84,7 +84,6 @@ const option: ECOption = {
         color: "#a1a1a1",
         fontSize: 14,
         formatter: function (name: string) {
-          undefined;
           return name.length > 8 ? name.slice(0, 8) + "..." : name;
         }
       },

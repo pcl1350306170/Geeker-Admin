@@ -1,16 +1,16 @@
 <template>
   <div class="search-menu">
     <i :class="'iconfont icon-sousuo'" class="toolBar-icon" @click="handleOpen"></i>
-    <el-dialog class="search-dialog" v-model="isShowSearch" :width="600" :show-close="false" top="10vh">
+    <el-dialog v-model="isShowSearch" class="search-dialog" :width="600" :show-close="false" top="10vh">
       <el-input
-        v-model="searchMenu"
         ref="menuInputRef"
+        v-model="searchMenu"
         placeholder="菜单搜索：支持菜单名称、路径"
         size="large"
         clearable
         :prefix-icon="Search"
       ></el-input>
-      <div v-if="searchList.length" class="menu-list" ref="menuListRef">
+      <div v-if="searchList.length" ref="menuListRef" class="menu-list">
         <div
           v-for="item in searchList"
           :key="item.path"
@@ -33,12 +33,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from "vue";
-import { InputInstance } from "element-plus";
 import { Search } from "@element-plus/icons-vue";
-import { useAuthStore } from "@/stores/modules/auth";
-import { useRouter } from "vue-router";
 import { useDebounceFn } from "@vueuse/core";
+import { InputInstance } from "element-plus";
+import { computed, nextTick, ref, watch } from "vue";
+import { useRouter } from "vue-router";
+
+import { useAuthStore } from "@/stores/modules/auth";
 
 const router = useRouter();
 const authStore = useAuthStore();

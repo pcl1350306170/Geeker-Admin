@@ -1,4 +1,7 @@
 import { ElLoading } from "element-plus";
+import { storeToRefs } from "pinia";
+
+import { useGlobalStore } from "@/stores/modules/global";
 
 /* 全局请求 loading */
 let loadingInstance: ReturnType<typeof ElLoading.service>;
@@ -7,11 +10,14 @@ let loadingInstance: ReturnType<typeof ElLoading.service>;
  * @description 开启 Loading
  * */
 const startLoading = () => {
+  const globalStore = useGlobalStore();
+  const { isDark } = storeToRefs(globalStore);
+
   loadingInstance = ElLoading.service({
     fullscreen: true,
     lock: true,
     text: "Loading",
-    background: "rgba(0, 0, 0, 0.7)"
+    background: isDark.value ? "rgba(0, 0, 0, 0.4)" : "rgba(255, 255, 255, 0.4)"
   });
 };
 

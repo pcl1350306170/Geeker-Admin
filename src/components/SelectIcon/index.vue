@@ -29,8 +29,8 @@
 </template>
 
 <script setup lang="ts" name="SelectIcon">
-import { ref, computed } from "vue";
 import * as Icons from "@element-plus/icons-vue";
+import { computed, ref } from "vue";
 
 interface SelectIconProps {
   iconValue: string;
@@ -86,5 +86,5 @@ const iconsList = computed((): { [key: string]: any } => {
 </script>
 
 <style scoped lang="scss">
-@import "./index.scss";
+@use "./index";
 </style>

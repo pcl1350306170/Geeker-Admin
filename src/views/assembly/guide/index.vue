@@ -13,8 +13,9 @@
 </template>
 
 <script setup lang="ts" name="guide">
-import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
+
+import { driver } from "driver.js";
 
 const driverObj = driver({
   allowClose: true,
@@ -91,5 +92,5 @@ const driverObj = driver({
 </script>
 
 <style scoped lang="scss">
-@import "./index.scss";
+@use "./index";
 </style>

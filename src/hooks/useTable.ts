@@ -1,5 +1,6 @@
+import { computed, reactive, toRefs } from "vue";
+
 import { Table } from "./interface";
-import { reactive, computed, toRefs } from "vue";
 
 /**
  * @description table 页面操作方法封装
@@ -60,14 +61,19 @@ export const useTable = (
       // 先把初始化参数和分页参数放到总参数里面
       Object.assign(state.totalParam, initParam, isPageable ? pageParam.value : {});
       let { data } = await api({ ...state.searchInitParam, ...state.totalParam });
-      dataCallBack && (data = dataCallBack(data));
+      if (dataCallBack) {
+        data = dataCallBack(data);
+      }
+
       state.tableData = isPageable ? data.list : data;
       // 解构后台返回的分页数据 (如果有分页更新分页信息)
       if (isPageable) {
         state.pageable.total = data.total;
       }
     } catch (error) {
-      requestError && requestError(error);
+      if (requestError) {
+        requestError(error);
+      }
     }
   };
 

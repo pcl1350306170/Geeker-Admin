@@ -28,14 +28,15 @@
 </template>
 
 <script setup lang="ts" name="tabs">
+import { CircleClose, FolderDelete, FullScreen, Promotion, Refresh, Remove } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
 import { inject, nextTick, ref } from "vue";
-import { HOME_URL } from "@/config";
 import { useRoute, useRouter } from "vue-router";
-import { useTabsStore } from "@/stores/modules/tabs";
+
+import { HOME_URL } from "@/config";
 import { useGlobalStore } from "@/stores/modules/global";
 import { useKeepAliveStore } from "@/stores/modules/keepAlive";
-import { Refresh, FullScreen, Remove, CircleClose, FolderDelete, Promotion } from "@element-plus/icons-vue";
-import { ElMessage } from "element-plus";
+import { useTabsStore } from "@/stores/modules/tabs";
 
 const route = useRoute();
 const router = useRouter();
@@ -44,15 +45,21 @@ const globalStore = useGlobalStore();
 const keepAliveStore = useKeepAliveStore();
 
 // 刷新当前页
-const refreshCurrentPage: Function = inject("refresh") as Function;
+const refreshCurrentPage = inject<(val: boolean) => void>("refresh");
 const refresh = () => {
   setTimeout(() => {
-    route.meta.isKeepAlive && keepAliveStore.removeKeepAliveName(route.fullPath as string);
-    refreshCurrentPage(false);
-    nextTick(() => {
-      route.meta.isKeepAlive && keepAliveStore.addKeepAliveName(route.fullPath as string);
-      refreshCurrentPage(true);
-    });
+    if (route.meta.isKeepAlive) {
+      keepAliveStore.removeKeepAliveName(route.fullPath as string);
+    }
+    if (refreshCurrentPage) {
+      refreshCurrentPage(false);
+      nextTick(() => {
+        if (route.meta.isKeepAlive) {
+          keepAliveStore.addKeepAliveName(route.fullPath as string);
+        }
+        refreshCurrentPage(true);
+      });
+    }
   }, 0);
 };
 

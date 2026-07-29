@@ -48,30 +48,31 @@
 </template>
 
 <script setup lang="tsx" name="useProTable">
-import { ref, reactive } from "vue";
-import { useRouter } from "vue-router";
-import { User } from "@/api/interface";
-import { useHandleData } from "@/hooks/useHandleData";
-import { useDownload } from "@/hooks/useDownload";
-import { useAuthButtons } from "@/hooks/useAuthButtons";
+import { CirclePlus, Delete, Download, EditPen, Refresh, Upload, View } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import ProTable from "@/components/ProTable/index.vue";
-import ImportExcel from "@/components/ImportExcel/index.vue";
-import UserDrawer from "@/views/proTable/components/UserDrawer.vue";
-import { ProTableInstance, ColumnProps, HeaderRenderScope } from "@/components/ProTable/interface";
-import { CirclePlus, Delete, EditPen, Download, Upload, View, Refresh } from "@element-plus/icons-vue";
+import { reactive, ref } from "vue";
+import { useRouter } from "vue-router";
+
+import { User } from "@/api/interface";
 import {
-  getUserList,
+  addUser,
+  batchAddUser,
+  changeUserStatus,
   deleteUser,
   editUser,
-  addUser,
-  changeUserStatus,
-  resetUserPassWord,
   exportUserInfo,
-  BatchAddUser,
+  getUserGender,
+  getUserList,
   getUserStatus,
-  getUserGender
+  resetUserPassWord
 } from "@/api/modules/user";
+import ImportExcel from "@/components/ImportExcel/index.vue";
+import ProTable from "@/components/ProTable/index.vue";
+import { ColumnProps, HeaderRenderScope, ProTableInstance } from "@/components/ProTable/interface";
+import { useAuthButtons } from "@/hooks/useAuthButtons";
+import { useDownload } from "@/hooks/useDownload";
+import { useHandleData } from "@/hooks/useHandleData";
+import UserDrawer from "@/views/proTable/components/UserDrawer.vue";
 
 const router = useRouter();
 
@@ -99,9 +100,11 @@ const dataCallback = (data: any) => {
 // 默认不做操作就直接在 ProTable 组件上绑定	:requestApi="getUserList"
 const getTableList = (params: any) => {
   let newParams = JSON.parse(JSON.stringify(params));
-  newParams.createTime && (newParams.startTime = newParams.createTime[0]);
-  newParams.createTime && (newParams.endTime = newParams.createTime[1]);
-  delete newParams.createTime;
+  if (newParams.createTime) {
+    newParams.startTime = newParams.createTime[0];
+    newParams.endTime = newParams.createTime[1];
+    delete newParams.createTime;
+  }
   return getUserList(newParams);
 };
 
@@ -250,7 +253,7 @@ const batchAdd = () => {
   const params = {
     title: "用户",
     tempApi: exportUserInfo,
-    importApi: BatchAddUser,
+    importApi: batchAddUser,
     getTableList: proTable.value?.getTableList
   };
   dialogRef.value?.acceptParams(params);

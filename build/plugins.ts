@@ -1,16 +1,15 @@
-import { resolve } from "path";
-import { PluginOption } from "vite";
-import { VitePWA } from "vite-plugin-pwa";
-import { createHtmlPlugin } from "vite-plugin-html";
-import { visualizer } from "rollup-plugin-visualizer";
-import { createSvgIconsPlugin } from "vite-plugin-svg-icons";
 import vue from "@vitejs/plugin-vue";
 import vueJsx from "@vitejs/plugin-vue-jsx";
-import eslintPlugin from "vite-plugin-eslint";
-import viteCompression from "vite-plugin-compression";
-import vueSetupExtend from "unplugin-vue-setup-extend-plus/vite";
-import NextDevTools from "vite-plugin-vue-devtools";
 import { codeInspectorPlugin } from "code-inspector-plugin";
+import { resolve } from "path";
+import { visualizer } from "rollup-plugin-visualizer";
+import vueSetupExtend from "unplugin-vue-setup-extend-plus/vite";
+import { PluginOption } from "vite";
+import viteCompression from "vite-plugin-compression";
+import { createHtmlPlugin } from "vite-plugin-html";
+import { VitePWA } from "vite-plugin-pwa";
+import { createSvgIconsPlugin } from "vite-plugin-svg-icons";
+import NextDevTools from "vite-plugin-vue-devtools";
 
 /**
  * 创建 vite 插件
@@ -24,8 +23,6 @@ export const createVitePlugins = (viteEnv: ViteEnv): (PluginOption | PluginOptio
     vueJsx(),
     // devTools
     VITE_DEVTOOLS && NextDevTools({ launchEditor: "code" }),
-    // esLint 报错信息显示在浏览器界面上
-    eslintPlugin(),
     // name 可以写在 script 标签上
     vueSetupExtend({}),
     // 创建打包压缩配置

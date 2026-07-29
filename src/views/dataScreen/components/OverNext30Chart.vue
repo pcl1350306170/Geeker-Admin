@@ -7,8 +7,9 @@
 
 <script setup lang="ts">
 import dayjs from "dayjs";
-import ECharts from "@/components/ECharts/index.vue";
+
 import { ECOption } from "@/components/ECharts/config";
+import ECharts from "@/components/ECharts/index.vue";
 import { randomNum } from "@/utils";
 
 const initDate = (): string[] => {

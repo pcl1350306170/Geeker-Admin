@@ -1,55 +1,87 @@
 import { defineStore } from "pinia";
-import { GlobalState } from "@/stores/interface";
-import { DEFAULT_PRIMARY } from "@/config";
-import piniaPersistConfig from "@/stores/helper/persist";
+import { ref, type UnwrapRef } from "vue";
 
-export const useGlobalStore = defineStore({
-  id: "geeker-global",
-  // 修改默认值之后，需清除 localStorage 数据
-  state: (): GlobalState => ({
+import { DEFAULT_PRIMARY } from "@/config";
+import type { AssemblySizeType, LanguageType, LayoutType } from "@/stores/interface";
+
+export const useGlobalStore = defineStore(
+  "geeker-global",
+  () => {
     // 布局模式 (纵向：vertical | 经典：classic | 横向：transverse | 分栏：columns)
-    layout: "vertical",
+    const layout = ref<LayoutType>("vertical");
     // element 组件大小
-    assemblySize: "default",
+    const assemblySize = ref<AssemblySizeType>("default");
     // 当前系统语言
-    language: null,
+    const language = ref<LanguageType>(null);
     // 当前页面是否全屏
-    maximize: false,
+    const maximize = ref<boolean>(false);
     // 主题颜色
-    primary: DEFAULT_PRIMARY,
+    const primary = ref<string>(DEFAULT_PRIMARY);
     // 深色模式
-    isDark: false,
+    const isDark = ref<boolean>(false);
     // 灰色模式
-    isGrey: false,
+    const isGrey = ref<boolean>(false);
     // 色弱模式
-    isWeak: false,
+    const isWeak = ref<boolean>(false);
     // 侧边栏反转
-    asideInverted: false,
+    const asideInverted = ref<boolean>(false);
     // 头部反转
-    headerInverted: false,
+    const headerInverted = ref<boolean>(false);
     // 折叠菜单
-    isCollapse: false,
+    const isCollapse = ref<boolean>(false);
     // 菜单手风琴
-    accordion: true,
+    const accordion = ref<boolean>(true);
     // 页面水印
-    watermark: false,
+    const watermark = ref<boolean>(false);
     // 面包屑导航
-    breadcrumb: true,
+    const breadcrumb = ref<boolean>(true);
     // 面包屑导航图标
-    breadcrumbIcon: true,
+    const breadcrumbIcon = ref<boolean>(true);
     // 标签页
-    tabs: true,
+    const tabs = ref<boolean>(true);
     // 标签页图标
-    tabsIcon: true,
+    const tabsIcon = ref<boolean>(true);
     // 页脚
-    footer: true
-  }),
-  getters: {},
-  actions: {
+    const footer = ref<boolean>(true);
+
+    const stateMap = {
+      layout,
+      assemblySize,
+      language,
+      maximize,
+      primary,
+      isDark,
+      isGrey,
+      isWeak,
+      asideInverted,
+      headerInverted,
+      isCollapse,
+      accordion,
+      watermark,
+      breadcrumb,
+      breadcrumbIcon,
+      tabs,
+      tabsIcon,
+      footer
+    } as const;
+
     // Set GlobalState
-    setGlobalState(...args: ObjToKeyValArray<GlobalState>) {
-      this.$patch({ [args[0]]: args[1] });
-    }
+    const setGlobalState = <K extends keyof typeof stateMap>(key: K, value: UnwrapRef<(typeof stateMap)[K]>) => {
+      const stateRef = stateMap[key];
+      if (stateRef) {
+        stateRef.value = value;
+      }
+    };
+
+    return {
+      ...stateMap,
+      setGlobalState
+    };
   },
-  persist: piniaPersistConfig("geeker-global")
-});
+  {
+    persist: {
+      key: "geeker-global",
+      storage: localStorage
+    }
+  }
+);

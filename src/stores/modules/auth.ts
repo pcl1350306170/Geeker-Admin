@@ -1,44 +1,56 @@
 import { defineStore } from "pinia";
-import { AuthState } from "@/stores/interface";
-import { getAuthButtonListApi, getAuthMenuListApi } from "@/api/modules/login";
-import { getFlatMenuList, getShowMenuList, getAllBreadcrumbList } from "@/utils";
+import { computed, ref } from "vue";
 
-export const useAuthStore = defineStore({
-  id: "geeker-auth",
-  state: (): AuthState => ({
-    // 按钮权限列表
-    authButtonList: {},
-    // 菜单权限列表
-    authMenuList: [],
-    // 当前页面的 router name，用来做按钮权限筛选
-    routeName: ""
-  }),
-  getters: {
-    // 按钮权限列表
-    authButtonListGet: state => state.authButtonList,
-    // 菜单权限列表 ==> 这里的菜单没有经过任何处理
-    authMenuListGet: state => state.authMenuList,
-    // 菜单权限列表 ==> 左侧菜单栏渲染，需要剔除 isHide == true
-    showMenuListGet: state => getShowMenuList(state.authMenuList),
-    // 菜单权限列表 ==> 扁平化之后的一维数组菜单，主要用来添加动态路由
-    flatMenuListGet: state => getFlatMenuList(state.authMenuList),
-    // 递归处理后的所有面包屑导航列表
-    breadcrumbListGet: state => getAllBreadcrumbList(state.authMenuList)
-  },
-  actions: {
-    // Get AuthButtonList
-    async getAuthButtonList() {
-      const { data } = await getAuthButtonListApi();
-      this.authButtonList = data;
-    },
-    // Get AuthMenuList
-    async getAuthMenuList() {
-      const { data } = await getAuthMenuListApi();
-      this.authMenuList = data;
-    },
-    // Set RouteName
-    async setRouteName(name: string) {
-      this.routeName = name;
-    }
-  }
+import { getAuthButtonListApi, getAuthMenuListApi } from "@/api/modules/login";
+import { getAllBreadcrumbList, getFlatMenuList, getShowMenuList } from "@/utils";
+
+export const useAuthStore = defineStore("geeker-auth", () => {
+  // 按钮权限列表
+  const authButtonList = ref<{ [key: string]: string[] }>({});
+  // 菜单权限列表
+  const authMenuList = ref<Menu.MenuOptions[]>([]);
+  // 当前页面的 router name，用来做按钮权限筛选
+  const routeName = ref<string>("");
+
+  // 按钮权限列表
+  const authButtonListGet = computed(() => authButtonList.value);
+  // 菜单权限列表 ==> 这里的菜单没有经过任何处理
+  const authMenuListGet = computed(() => authMenuList.value);
+  // 菜单权限列表 ==> 左侧菜单栏渲染，需要剔除 isHide == true
+  const showMenuListGet = computed(() => getShowMenuList(authMenuList.value));
+  // 菜单权限列表 ==> 扁平化之后的一维数组菜单，主要用来添加动态路由
+  const flatMenuListGet = computed(() => getFlatMenuList(authMenuList.value));
+  // 递归处理后的所有面包屑导航列表
+  const breadcrumbListGet = computed(() => getAllBreadcrumbList(authMenuList.value));
+
+  // Get AuthButtonList
+  const getAuthButtonList = async () => {
+    const { data } = await getAuthButtonListApi();
+    authButtonList.value = data;
+  };
+
+  // Get AuthMenuList
+  const getAuthMenuList = async () => {
+    const { data } = await getAuthMenuListApi();
+    authMenuList.value = data;
+  };
+
+  // Set RouteName
+  const setRouteName = async (name: string) => {
+    routeName.value = name;
+  };
+
+  return {
+    authButtonList,
+    authMenuList,
+    routeName,
+    authButtonListGet,
+    authMenuListGet,
+    showMenuListGet,
+    flatMenuListGet,
+    breadcrumbListGet,
+    getAuthButtonList,
+    getAuthMenuList,
+    setRouteName
+  };
 });

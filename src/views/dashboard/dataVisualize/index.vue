@@ -75,8 +75,9 @@
 
 <script setup lang="ts" name="dataVisualize">
 import { ref } from "vue";
-import Pie from "./components/pie.vue";
+
 import Curve from "./components/curve.vue";
+import Pie from "./components/pie.vue";
 
 const tabActive = ref(1);
 
@@ -91,5 +92,5 @@ const tab = [
 </script>
 
 <style scoped lang="scss">
-@import "./index.scss";
+@use "./index";
 </style>

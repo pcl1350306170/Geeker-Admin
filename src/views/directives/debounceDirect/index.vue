@@ -7,11 +7,12 @@
 
 <script setup lang="ts" name="debounceDirect">
 import { ElMessage } from "element-plus";
+
 const debounceClick = () => {
   ElMessage.success("我是防抖按钮触发的事件 🍍🍓🍌");
 };
 </script>
 
 <style scoped lang="scss">
-@import "./index.scss";
+@use "./index";
 </style>

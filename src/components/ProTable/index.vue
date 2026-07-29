@@ -33,9 +33,9 @@
     </div>
     <!-- 表格主体 -->
     <el-table
-      ref="tableRef"
       v-bind="$attrs"
       :id="uuid"
+      ref="tableRef"
       :data="processTableData"
       :border="border"
       :row-key="rowKey"
@@ -103,19 +103,21 @@
 </template>
 
 <script setup lang="ts" name="ProTable">
-import { ref, watch, provide, onMounted, unref, computed, reactive } from "vue";
+import { Operation, Refresh, Search } from "@element-plus/icons-vue";
 import { ElTable } from "element-plus";
-import { useTable } from "@/hooks/useTable";
-import { useSelection } from "@/hooks/useSelection";
+import Sortable from "sortablejs";
+import { computed, onMounted, provide, reactive, ref, unref, watch } from "vue";
+
 import { BreakPoint } from "@/components/Grid/interface";
 import { ColumnProps, TypeProps } from "@/components/ProTable/interface";
-import { Refresh, Operation, Search } from "@element-plus/icons-vue";
-import { generateUUID, handleProp } from "@/utils";
 import SearchForm from "@/components/SearchForm/index.vue";
-import Pagination from "./components/Pagination.vue";
+import { useSelection } from "@/hooks/useSelection";
+import { useTable } from "@/hooks/useTable";
+import { generateUUID, handleProp } from "@/utils";
+
 import ColSetting from "./components/ColSetting.vue";
+import Pagination from "./components/Pagination.vue";
 import TableColumn from "./components/TableColumn.vue";
-import Sortable from "sortablejs";
 
 export interface ProTableProps {
   columns: ColumnProps[]; // 列配置项  ==> 必传
@@ -178,8 +180,13 @@ const clearSelection = () => tableRef.value!.clearSelection();
 // 初始化表格数据 && 拖拽排序
 onMounted(() => {
   dragSort();
-  props.requestAuto && getTableList();
-  props.data && (pageable.value.total = props.data.length);
+  if (props.requestAuto) {
+    getTableList();
+  }
+
+  if (props.data) {
+    pageable.value.total = props.data.length;
+  }
 });
 
 // 处理表格数据

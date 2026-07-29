@@ -14,12 +14,14 @@
 </template>
 
 <script setup lang="ts" name="WangEditor">
-import { nextTick, computed, inject, shallowRef, onBeforeUnmount } from "vue";
-import { IToolbarConfig, IEditorConfig } from "@wangeditor/editor";
-import { Editor, Toolbar } from "@wangeditor/editor-for-vue";
-import { uploadImg, uploadVideo } from "@/api/modules/upload";
 import "@wangeditor/editor/dist/css/style.css";
+
+import { IEditorConfig, IToolbarConfig } from "@wangeditor/editor";
+import { Editor, Toolbar } from "@wangeditor/editor-for-vue";
 import { formContextKey, formItemContextKey } from "element-plus";
+import { computed, inject, nextTick, onBeforeUnmount, shallowRef } from "vue";
+
+import { uploadImg, uploadVideo } from "@/api/modules/upload";
 
 // 富文本 DOM 元素
 const editorRef = shallowRef();
@@ -139,7 +141,9 @@ const uploadVideoValidate = (file: File): boolean => {
 
 // 编辑框失去焦点时触发
 const handleBlur = () => {
-  formItemContext?.prop && formContext?.validateField([formItemContext.prop as string]);
+  if (formItemContext?.prop) {
+    formContext?.validateField([formItemContext.prop as string]);
+  }
 };
 
 // 组件销毁时，也及时销毁编辑器
@@ -154,5 +158,5 @@ defineExpose({
 </script>
 
 <style scoped lang="scss">
-@import "./index.scss";
+@use "./index";
 </style>
