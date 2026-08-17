@@ -89,6 +89,23 @@ export namespace User {
   }
 }
 
+// 角色管理模块（轻量方案：固定角色字典）
+export namespace Role {
+  // 角色信息
+  export interface ResRoleList {
+    code: string;
+    name: string;
+    description: string;
+    /** 菜单权限是否固定不可编辑（admin 为 true） */
+    menusFixed: boolean;
+  }
+  // 保存角色菜单权限参数
+  export interface ReqSaveRoleMenus {
+    role: string;
+    menuIds: number[];
+  }
+}
+
 // 菜单权限模块
 export namespace MenuManage {
   // 菜单信息（与后端 sys_menu 对应）
