@@ -89,6 +89,32 @@ export namespace User {
   }
 }
 
+// 菜单权限模块
+export namespace MenuManage {
+  // 菜单信息（与后端 sys_menu 对应）
+  export interface ResMenuList {
+    id: number;
+    parentId: number;
+    path: string;
+    name: string;
+    component: string;
+    redirect: string;
+    icon: string;
+    title: string;
+    isLink: string;
+    isHide: number;
+    isFull: number;
+    isAffix: number;
+    isKeepAlive: number;
+    activeMenu: string;
+    sort: number;
+    status: number;
+    children?: ResMenuList[];
+  }
+  // 新增/编辑参数
+  export type ReqSaveMenu = Partial<ResMenuList>;
+}
+
 // 账号管理模块
 export namespace Account {
   // 查询参数
