@@ -82,18 +82,11 @@ const login = (formEl: FormInstance | undefined) => {
 
       // 4.跳转到首页
       router.push(HOME_URL);
-      // ElNotification({
-      //   title: getTimeState(),
-      //   message: "欢迎登录 Geeker-Admin",
-      //   type: "success",
-      //   duration: 3000
-      // });
       ElNotification({
-        title: "React 付费版本 🔥🔥🔥",
-        dangerouslyUseHTMLString: true,
-        message: "预览地址：<a href='https://pro.spicyboy.cn'>https://pro.spicyboy.cn</a>",
+        title: "欢迎登录",
+        message: "欢迎登录 Geeker-Admin",
         type: "success",
-        duration: 8000
+        duration: 3000
       });
     } finally {
       loading.value = false;
