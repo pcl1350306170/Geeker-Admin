@@ -132,6 +132,65 @@ export namespace MenuManage {
   export type ReqSaveMenu = Partial<ResMenuList>;
 }
 
+// 开发资产库模块
+export namespace DevAsset {
+  // 资产类型
+  export type AssetType = "CODE" | "SOLUTION" | "TROUBLESHOOTING" | "PROCEDURE" | "SNIPPET";
+  // 查询参数
+  export interface ReqQueryParams extends ReqPage {
+    keyword?: string;
+    type?: string;
+    tag?: string;
+    isFavorite?: number;
+  }
+  // 列表项（不含正文）
+  export interface ResAssetList {
+    id: number;
+    title: string;
+    type: AssetType;
+    description: string;
+    language: string;
+    tags: string[];
+    isFavorite: number;
+    usageCount: number;
+    parentId: number | null;
+    updatedAt: string;
+  }
+  // 详情（含正文）
+  export interface ResAssetDetail {
+    id: number;
+    title: string;
+    type: AssetType;
+    description: string;
+    content: string;
+    language: string;
+    tags: string[];
+    isFavorite: number;
+    usageCount: number;
+    parentId: number | null;
+    parentTitle: string | null;
+    createdBy: string;
+    createdAt: string;
+    updatedAt: string;
+  }
+  // 新增/编辑参数
+  export interface ReqSaveAsset {
+    type?: string;
+    title?: string;
+    description?: string;
+    content?: string;
+    language?: string;
+    tags?: string[];
+  }
+  // 首页聚合数据
+  export interface ResHomeData {
+    recentUsed: ResAssetList[];
+    favorites: ResAssetList[];
+    mostUsed: ResAssetList[];
+    recentUpdated: ResAssetList[];
+  }
+}
+
 // 账号管理模块
 export namespace Account {
   // 查询参数
