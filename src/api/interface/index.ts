@@ -88,3 +88,31 @@ export namespace User {
     children?: ResDepartment[];
   }
 }
+
+// 账号管理模块
+export namespace Account {
+  // 查询参数
+  export interface ReqAccountParams extends ReqPage {
+    username?: string;
+    nickname?: string;
+    status?: number | "";
+  }
+  // 账号信息
+  export interface ResAccountList {
+    id: number;
+    username: string;
+    nickname: string;
+    avatar: string;
+    status: number;
+    createTime: string;
+  }
+  // 新增/编辑参数（password 为 MD5 后的值）
+  export interface ReqSaveAccount {
+    id?: number;
+    username?: string;
+    password?: string;
+    nickname?: string;
+    avatar?: string;
+    status?: number;
+  }
+}
