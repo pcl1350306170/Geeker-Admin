@@ -24,7 +24,7 @@
         default-first-option
         @change="handleSearch"
       >
-        <el-option v-for="tag in tagOptions" :key="tag" :label="tag" :value="tag" />
+        <el-option v-for="tag in tagOptions" :key="tag.id" :label="tag.name" :value="tag.name" />
       </el-select>
       <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
       <el-button type="primary" plain :icon="Plus" @click="router.push('/devAssets/create')">新增资产</el-button>
@@ -57,7 +57,8 @@ import { computed, onActivated, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { getDevAssetListApi } from "@/api/modules/devAssets";
-import { DevAsset } from "@/api/interface";
+import { getDevTagListApi } from "@/api/modules/devTags";
+import { DevAsset, DevTag } from "@/api/interface";
 import AssetCard from "@/views/devAssets/components/AssetCard.vue";
 import { ASSET_TYPE_OPTIONS } from "@/views/devAssets/config";
 
@@ -66,7 +67,7 @@ const router = useRouter();
 
 const loading = ref(false);
 const assetList = ref<DevAsset.ResAssetList[]>([]);
-const tagOptions = ref<string[]>([]);
+const tagOptions = ref<DevTag.ResTag[]>([]);
 
 const searchState = reactive({
   keyword: "",
@@ -96,13 +97,15 @@ const fetchList = async () => {
     });
     assetList.value = data.list || [];
     pageable.total = data.total || 0;
-    // 汇总标签供筛选（仅取当前页）
-    const tags = new Set<string>(tagOptions.value);
-    assetList.value.forEach(item => item.tags?.forEach(tag => tags.add(tag)));
-    tagOptions.value = [...tags];
   } finally {
     loading.value = false;
   }
+};
+
+/** 标签筛选项来自标签字典 */
+const loadTagOptions = async () => {
+  const { data } = await getDevTagListApi();
+  tagOptions.value = data || [];
 };
 
 const handleSearch = () => {
@@ -110,21 +113,35 @@ const handleSearch = () => {
   fetchList();
 };
 
-/** 从路由 query 同步搜索条件（首页搜索跳转过来） */
+/** 从路由 query 同步搜索条件（首页搜索 / 标签管理页跳转过来） */
 const syncFromRoute = () => {
+  let changed = false;
   const kw = route.query.keyword;
   if (typeof kw === "string") {
     searchState.keyword = kw;
+    changed = true;
+  }
+  const tag = route.query.tag;
+  if (typeof tag === "string") {
+    searchState.tag = tag;
+    changed = true;
+  }
+  if (changed) {
     pageable.pageNum = 1;
     fetchList();
   }
 };
 
 onMounted(() => {
+  loadTagOptions();
   syncFromRoute();
-  if (!route.query.keyword) fetchList();
+  if (!route.query.keyword && !route.query.tag) fetchList();
 });
-onActivated(syncFromRoute);
+onActivated(() => {
+  // 标签字典可能在其它页面有变动，回本页时刷新选项
+  loadTagOptions();
+  syncFromRoute();
+});
 </script>
 
 <style scoped lang="scss">

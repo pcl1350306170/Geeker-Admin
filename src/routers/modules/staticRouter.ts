@@ -19,6 +19,15 @@ export const staticRouter: RouteRecordRaw[] = [
     }
   },
   {
+    // 资产库公开查询页：免登录独立单页，不走 Layout 菜单体系
+    path: "/public/assets",
+    name: "publicAssets",
+    component: () => import("@/views/publicAssets/index.vue"),
+    meta: {
+      title: "资产库"
+    }
+  },
+  {
     path: "/layout",
     name: "layout",
     component: () => import("@/layouts/index.vue"),

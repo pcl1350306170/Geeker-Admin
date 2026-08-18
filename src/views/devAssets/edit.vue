@@ -1,10 +1,10 @@
 <template>
-  <div v-loading="loading" class="dev-assets-edit card">
+  <div ref="rootRef" v-loading="loading" class="dev-assets-edit card">
     <div class="edit-header">
       <h2 class="edit-header__title">{{ isEdit ? "编辑资产" : "新增资产" }}</h2>
       <div class="edit-header__actions">
-        <el-button @click="handleCancel">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
+        <el-button :disabled="saving" @click="handleCancel">取消</el-button>
+        <el-button type="primary" :loading="saving" :disabled="saving" @click="handleSave">保存</el-button>
       </div>
     </div>
 
@@ -43,7 +43,7 @@
           default-first-option
           placeholder="输入后回车添加，如：Vue3、Sortable、拖拽"
         >
-          <el-option v-for="tag in SUGGEST_TAGS" :key="tag" :label="tag" :value="tag" />
+          <el-option v-for="tag in tagOptions" :key="tag.id" :label="tag.name" :value="tag.name" />
         </el-select>
       </el-form-item>
       <el-form-item label="正文" prop="content">
@@ -53,6 +53,7 @@
           :preview="false"
           language="zh-CN"
           placeholder="支持 Markdown，代码块请使用 ``` 围栏并标注语言……"
+          @on-upload-img="handleUploadImg"
         />
       </el-form-item>
     </el-form>
@@ -67,7 +68,11 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { addDevAssetApi, getDevAssetDetailApi, updateDevAssetApi } from "@/api/modules/devAssets";
-import { ASSET_TYPE_OPTIONS, LANGUAGE_OPTIONS, SUGGEST_TAGS } from "@/views/devAssets/config";
+import { getDevTagListApi } from "@/api/modules/devTags";
+import { uploadImg } from "@/api/modules/upload";
+import { DevTag } from "@/api/interface";
+import { ASSET_TYPE_OPTIONS, LANGUAGE_OPTIONS } from "@/views/devAssets/config";
+import { setupImgCdnFallback } from "@/views/devAssets/utils/imgFallback";
 
 const route = useRoute();
 const router = useRouter();
@@ -76,6 +81,8 @@ const isEdit = computed(() => !!route.params.id);
 const loading = ref(false);
 const saving = ref(false);
 const formRef = ref<FormInstance>();
+const rootRef = ref<HTMLElement>();
+const tagOptions = ref<DevTag.ResTag[]>([]);
 
 const form = reactive({
   type: "CODE",
@@ -109,7 +116,16 @@ const loadDetail = async () => {
 };
 
 const handleSave = async () => {
-  await formRef.value?.validate();
+  // 防连击：保存进行中直接忽略重复点击
+  if (saving.value) return;
+  try {
+    await formRef.value?.validate();
+  } catch {
+    // 表单校验失败：错误信息已在表单项内展示，直接终止保存
+    return;
+  }
+  // 防连击：两次点击都通过校验时，仅第一次继续执行
+  if (saving.value) return;
   saving.value = true;
   try {
     const params = {
@@ -125,9 +141,10 @@ const handleSave = async () => {
       ElMessage.success("保存成功");
       router.replace(`/devAssets/detail/${route.params.id}`);
     } else {
-      const { data } = await addDevAssetApi(params);
-      ElMessage.success("新增成功");
-      router.replace(`/devAssets/detail/${data.id}`);
+      await addDevAssetApi(params);
+      ElMessage.success("新增成功，表单已保留，可修改后继续新增");
+      // 保存时新注册的标签同步刷新到候选项，方便下一次新增复用
+      loadTagOptions();
     }
   } finally {
     saving.value = false;
@@ -138,7 +155,34 @@ const handleCancel = () => {
   router.back();
 };
 
-onMounted(loadDetail);
+// MdEditor 图片上传（工具栏选择 / 剪贴板粘贴均触发），上传成功后编辑器自动插入图片语法
+const handleUploadImg = async (files: File[], callback: (urls: string[]) => void) => {
+  try {
+    const urls: string[] = [];
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append("file", file);
+      const { data } = await uploadImg(formData);
+      urls.push(data.fileUrl);
+    }
+    callback(urls);
+  } catch {
+    ElMessage.error("图片上传失败");
+  }
+};
+
+onMounted(() => {
+  loadDetail();
+  loadTagOptions();
+  // 编辑器预览区 CDN 图片未 push 时自动回退到后端本地直出地址
+  if (rootRef.value) setupImgCdnFallback(rootRef.value);
+});
+
+/** 标签候选项来自标签字典（保存资产时输入的新标签会自动注册） */
+const loadTagOptions = async () => {
+  const { data } = await getDevTagListApi();
+  tagOptions.value = data || [];
+};
 // keep-alive 下在新增/不同资产编辑之间切换时重新加载
 watch(
   () => route.fullPath,

@@ -39,20 +39,3 @@ export const LANGUAGE_OPTIONS = [
   "json",
   "arkts"
 ];
-
-// 常用标签建议列表
-export const SUGGEST_TAGS = [
-  "Vue3",
-  "Vue2",
-  "JavaScript",
-  "TypeScript",
-  "CSS",
-  "SCSS",
-  "ArkTS",
-  "HarmonyOS",
-  "Sortable",
-  "Git",
-  "Node",
-  "Linux",
-  "Docker"
-];

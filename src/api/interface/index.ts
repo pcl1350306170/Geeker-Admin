@@ -191,6 +191,23 @@ export namespace DevAsset {
   }
 }
 
+// 开发资产库-标签字典模块
+export namespace DevTag {
+  // 标签项（含使用数量）
+  export interface ResTag {
+    id: number;
+    name: string;
+    sort: number;
+    usageCount: number;
+    createdAt: string;
+  }
+  // 新增/编辑参数
+  export interface ReqSaveTag {
+    name?: string;
+    sort?: number;
+  }
+}
+
 // 账号管理模块
 export namespace Account {
   // 查询参数

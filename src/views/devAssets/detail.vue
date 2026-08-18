@@ -1,5 +1,5 @@
 <template>
-  <div v-loading="loading" class="dev-assets-detail card">
+  <div ref="rootRef" v-loading="loading" class="dev-assets-detail card">
     <template v-if="detail">
       <!-- 头部信息 -->
       <div class="detail-header">
@@ -65,12 +65,14 @@ import {
 } from "@/api/modules/devAssets";
 import { DevAsset } from "@/api/interface";
 import { ASSET_TYPE_MAP, ASSET_TYPE_TAG_TYPE } from "@/views/devAssets/config";
+import { setupImgCdnFallback } from "@/views/devAssets/utils/imgFallback";
 
 const route = useRoute();
 const router = useRouter();
 
 const loading = ref(false);
 const detail = ref<DevAsset.ResAssetDetail | null>(null);
+const rootRef = ref<HTMLElement>();
 
 const assetId = ref(Number(route.params.id));
 
@@ -137,7 +139,11 @@ const handleDelete = async () => {
   router.replace("/devAssets/list");
 };
 
-onMounted(fetchDetail);
+onMounted(() => {
+  fetchDetail();
+  // CDN 图片未 push 时自动回退到后端本地直出地址（捕获阶段委托，覆盖异步渲染的正文图片）
+  if (rootRef.value) setupImgCdnFallback(rootRef.value);
+});
 // keep-alive 下切换到其他资产详情时重新拉取
 watch(
   () => route.params.id,
