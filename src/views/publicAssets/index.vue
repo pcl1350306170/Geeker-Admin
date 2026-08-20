@@ -1,53 +1,40 @@
 <template>
   <div ref="rootRef" class="public-assets">
-    <!-- 页头 -->
-    <header class="public-assets__header">
-      <div class="public-assets__header-inner">
-        <h1 class="public-assets__title">
-          <el-icon class="public-assets__logo"><Collection /></el-icon>
+    <!-- 中心搜索区：极简单框 -->
+    <main class="public-hero">
+      <div class="public-hero__inner">
+        <h1 class="public-hero__title">
+          <el-icon class="public-hero__logo"><Collection /></el-icon>
           开发资产库
         </h1>
-        <span class="public-assets__subtitle">快速检索历史开发资产：代码 / 方案 / 踩坑记录 / 脚本</span>
-      </div>
-    </header>
-
-    <main class="public-assets__main">
-      <!-- 筛选区 -->
-      <div class="public-filter">
+        <p class="public-hero__sub">快速检索历史开发资产：代码 / 方案 / 踩坑记录 / 脚本</p>
         <el-input
-          v-model="searchState.keyword"
-          class="public-filter__search"
+          v-model="keyword"
+          class="public-hero__search"
+          size="large"
+          autofocus
+          clearable
           placeholder="搜索标题、标签、简介、正文、错误信息……"
-          clearable
-          :prefix-icon="Search"
           @keyup.enter="handleSearch"
-          @clear="handleSearch"
-        />
-        <el-select
-          v-model="searchState.type"
-          class="public-filter__select"
-          placeholder="全部类型"
-          clearable
-          @change="handleSearch"
         >
-          <el-option v-for="item in ASSET_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
-        </el-select>
-        <el-select
-          v-model="searchState.tag"
-          class="public-filter__select"
-          placeholder="全部标签"
-          clearable
-          filterable
-          @change="handleSearch"
-        >
-          <el-option v-for="tag in tagOptions" :key="tag.id" :label="tag.name" :value="tag.name" />
-        </el-select>
-        <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+          <template #append>
+            <el-button :icon="Search" :loading="loading" @click="handleSearch">搜索</el-button>
+          </template>
+        </el-input>
+        <p class="public-hero__tip">输入关键词后按 Enter 搜索，结果弹窗展示，按 Esc 关闭</p>
       </div>
+    </main>
 
-      <!-- 结果列表 -->
+    <!-- 第一层：搜索结果列表弹窗 -->
+    <el-dialog v-model="resultVisible" width="760px" top="8vh" class="public-result-dialog">
+      <template #header>
+        <span class="public-result__title">「{{ searchedKeyword }}」的搜索结果</span>
+      </template>
       <div v-loading="loading" class="public-result">
-        <div v-if="assetList.length" class="public-result__grid">
+        <div v-if="assetList.length" class="public-result__list">
           <div v-for="item in assetList" :key="item.id" class="pub-card" @click="openDetail(item.id)">
             <div class="pub-card__header">
               <span class="pub-card__title" :title="item.title">{{ item.title }}</span>
@@ -69,21 +56,16 @@
           </div>
         </div>
         <el-empty v-if="!loading && !assetList.length" :description="emptyText" />
+        <p v-if="assetList.length && assetList.length < total" class="public-result__more">
+          共 {{ total }} 条，仅展示前 {{ assetList.length }} 条，请细化关键词
+        </p>
       </div>
+      <template #footer>
+        <el-button @click="resultVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
 
-      <!-- 分页 -->
-      <el-pagination
-        v-model:current-page="pageable.pageNum"
-        v-model:page-size="pageable.pageSize"
-        :total="pageable.total"
-        :page-sizes="[20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleSearch"
-        @current-change="fetchList"
-      />
-    </main>
-
-    <!-- 详情弹窗 -->
+    <!-- 第二层：详情弹窗（Esc 优先关闭本层，再按关闭结果列表层） -->
     <el-dialog v-model="detailVisible" width="860px" top="5vh" destroy-on-close class="public-detail-dialog">
       <template #header>
         <div class="public-detail__header">
@@ -121,37 +103,29 @@ import { ElMessage } from "element-plus";
 import dayjs from "dayjs";
 import { MdPreview } from "md-editor-v3";
 import "md-editor-v3/lib/style.css";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 
-import {
-  getPublicAssetDetailApi,
-  getPublicAssetListApi,
-  getPublicTagListApi,
-  recordPublicCopyApi
-} from "@/api/modules/devAssetsPublic";
-import { DevAsset, DevTag } from "@/api/interface";
-import { ASSET_TYPE_MAP, ASSET_TYPE_OPTIONS, ASSET_TYPE_TAG_TYPE } from "@/views/devAssets/config";
+import { getPublicAssetDetailApi, getPublicAssetListApi, recordPublicCopyApi } from "@/api/modules/devAssetsPublic";
+import { DevAsset } from "@/api/interface";
+import { ASSET_TYPE_MAP, ASSET_TYPE_TAG_TYPE } from "@/views/devAssets/config";
 import { setupImgCdnFallback } from "@/views/devAssets/utils/imgFallback";
 
 const route = useRoute();
 
+const PAGE_SIZE = 20;
+
+const keyword = ref("");
+// 分享链接携带的隐式筛选条件（无 UI，仅透传给后端）
+const hiddenFilter = { type: "", tag: "" };
+// 实际发起搜索时使用的关键词（用于弹窗标题与空态文案）
+const searchedKeyword = ref("");
+
 const loading = ref(false);
+const resultVisible = ref(false);
 const assetList = ref<DevAsset.ResAssetList[]>([]);
-const tagOptions = ref<DevTag.ResTag[]>([]);
+const total = ref(0);
 const rootRef = ref<HTMLElement>();
-
-const searchState = reactive({
-  keyword: "",
-  type: "",
-  tag: ""
-});
-
-const pageable = reactive({
-  pageNum: 1,
-  pageSize: 20,
-  total: 0
-});
 
 // 详情弹窗
 const detailVisible = ref(false);
@@ -159,34 +133,34 @@ const detailLoading = ref(false);
 const detail = ref<DevAsset.ResAssetDetail | null>(null);
 
 const emptyText = computed(() => {
-  return searchState.keyword ? `没有找到与「${searchState.keyword}」相关的资产，换个关键词试试` : "暂无资产数据";
+  return searchedKeyword.value ? `没有找到与「${searchedKeyword.value}」相关的资产，换个关键词试试` : "暂无资产数据";
 });
 
-const fetchList = async () => {
+/** 关键字搜索：空关键字不请求，仅轻提示 */
+const handleSearch = async () => {
+  // 防连击：请求进行中忽略重复触发
+  if (loading.value) return;
+  const kw = keyword.value.trim();
+  if (!kw) {
+    ElMessage.info("请输入搜索关键词");
+    return;
+  }
+  searchedKeyword.value = kw;
+  resultVisible.value = true;
   loading.value = true;
   try {
     const { data } = await getPublicAssetListApi({
-      pageNum: pageable.pageNum,
-      pageSize: pageable.pageSize,
-      keyword: searchState.keyword || undefined,
-      type: searchState.type || undefined,
-      tag: searchState.tag || undefined
+      pageNum: 1,
+      pageSize: PAGE_SIZE,
+      keyword: kw,
+      type: hiddenFilter.type || undefined,
+      tag: hiddenFilter.tag || undefined
     });
     assetList.value = data.list || [];
-    pageable.total = data.total || 0;
+    total.value = data.total || 0;
   } finally {
     loading.value = false;
   }
-};
-
-const loadTagOptions = async () => {
-  const { data } = await getPublicTagListApi();
-  tagOptions.value = data || [];
-};
-
-const handleSearch = () => {
-  pageable.pageNum = 1;
-  fetchList();
 };
 
 /** 打开详情弹窗（后端记录 VIEW） */
@@ -229,20 +203,20 @@ const handleContentClick = (e: MouseEvent) => {
   }
 };
 
-/** 从路由 query 同步搜索条件（支持外部分享搜索链接 #/public/assets?keyword=xx） */
+/** 从路由 query 同步搜索条件（支持外部分享搜索链接 /public/assets?keyword=xx&type=&tag=） */
 const syncFromRoute = () => {
   const kw = route.query.keyword;
   const type = route.query.type;
   const tag = route.query.tag;
-  if (typeof kw === "string") searchState.keyword = kw;
-  if (typeof type === "string") searchState.type = type;
-  if (typeof tag === "string") searchState.tag = tag;
+  if (typeof kw === "string") keyword.value = kw;
+  if (typeof type === "string") hiddenFilter.type = type;
+  if (typeof tag === "string") hiddenFilter.tag = tag;
+  return !!keyword.value.trim();
 };
 
 onMounted(() => {
-  syncFromRoute();
-  loadTagOptions();
-  fetchList();
+  // 分享链接携带关键词时自动发起搜索
+  if (syncFromRoute()) handleSearch();
   // CDN 图片未 push 时自动回退到后端本地直出地址（弹窗未 teleport，事件可冒泡到根元素）
   if (rootRef.value) setupImgCdnFallback(rootRef.value);
 });
@@ -253,64 +227,84 @@ onMounted(() => {
   min-height: 100vh;
   background: var(--el-bg-color-page);
 }
-.public-assets__header {
-  padding: 26px 0 18px;
-  background: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  &-inner {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 14px;
-    align-items: baseline;
-    width: min(1200px, 92%);
-    margin: 0 auto;
-  }
-}
-.public-assets__title {
+.public-hero {
   display: flex;
-  gap: 8px;
   align-items: center;
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--el-text-color-primary);
-}
-.public-assets__logo {
-  color: var(--el-color-primary);
-}
-.public-assets__subtitle {
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
-}
-.public-assets__main {
-  width: min(1200px, 92%);
-  padding: 18px 0 40px;
-  margin: 0 auto;
-}
-.public-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 18px;
-  &__search {
-    width: 400px;
-    max-width: 100%;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 0 16px;
+  &__inner {
+    width: min(680px, 92%);
+    text-align: center;
   }
-  &__select {
-    width: 160px;
+  &__title {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--el-text-color-primary);
+  }
+  &__logo {
+    font-size: 30px;
+    color: var(--el-color-primary);
+  }
+  &__sub {
+    margin: 12px 0 32px;
+    font-size: 14px;
+    color: var(--el-text-color-secondary);
+  }
+
+  /* 搜索框整体放大 1.5 倍（高度 40 → 60px、字号 14 → 21px），居中占据视觉焦点 */
+  &__search {
+    --el-component-size-large: 60px;
+    --el-input-height: 60px;
+
+    font-size: 21px;
+    :deep(.el-input__inner) {
+      font-size: 21px;
+    }
+    :deep(.el-input__prefix) {
+      font-size: 22px;
+    }
+    :deep(.el-input-group__append .el-button) {
+      padding: 0 24px;
+      font-size: 19px;
+      .el-icon {
+        font-size: 21px;
+      }
+    }
+  }
+  &__tip {
+    margin: 14px 0 0;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
   }
 }
 .public-result {
   min-height: 200px;
-  &__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  &__title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+  }
+  &__list {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
+  }
+  &__more {
+    margin: 14px 0 0;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    text-align: center;
   }
 }
 .pub-card {
   box-sizing: border-box;
-  padding: 16px 18px;
+  padding: 14px 16px;
   cursor: pointer;
   background: var(--el-bg-color);
   border: 1px solid var(--el-border-color-lighter);
@@ -365,16 +359,12 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 12px;
+    margin-top: 10px;
   }
   &__meta {
     font-size: 12px;
     color: var(--el-text-color-secondary);
   }
-}
-.el-pagination {
-  justify-content: flex-end;
-  margin-top: 18px;
 }
 .public-detail__header {
   padding-right: 20px;
