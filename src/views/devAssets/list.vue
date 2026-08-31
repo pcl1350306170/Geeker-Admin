@@ -27,13 +27,13 @@
         <el-option v-for="tag in tagOptions" :key="tag.id" :label="tag.name" :value="tag.name" />
       </el-select>
       <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
-      <el-button type="primary" plain :icon="Plus" @click="router.push('/devAssets/create')">新增资产</el-button>
+      <el-button type="primary" plain :icon="Plus" @click="openCreateDialog">新增资产</el-button>
     </div>
 
     <!-- 结果列表 -->
     <div v-loading="loading" class="list-result">
       <div v-if="assetList.length" class="list-result__grid">
-        <AssetCard v-for="item in assetList" :key="item.id" :asset="item" show-copy />
+        <AssetCard v-for="item in assetList" :key="item.id" :asset="item" show-copy @view="openDetail" />
       </div>
       <el-empty v-if="!loading && !assetList.length" :description="emptyText" />
     </div>
@@ -48,22 +48,36 @@
       @size-change="handleSearch"
       @current-change="fetchList"
     />
+
+    <!-- 详情弹窗 -->
+    <DetailDialog
+      v-model:visible="detailVisible"
+      :asset-id="currentAssetId"
+      @edit="openEditFromDetail"
+      @create="openCreateFromDetail"
+      @deleted="fetchList"
+      @view-detail="openDetail"
+    />
+
+    <!-- 编辑/新增弹窗 -->
+    <EditDialog v-model:visible="editVisible" :asset-id="editAssetId" @saved="handleEditSaved" />
   </div>
 </template>
 
 <script setup lang="ts" name="devAssetsList">
 import { Plus, Search } from "@element-plus/icons-vue";
 import { computed, onActivated, onMounted, reactive, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 
 import { getDevAssetListApi } from "@/api/modules/devAssets";
 import { getDevTagListApi } from "@/api/modules/devTags";
 import { DevAsset, DevTag } from "@/api/interface";
 import AssetCard from "@/views/devAssets/components/AssetCard.vue";
+import DetailDialog from "@/views/devAssets/components/DetailDialog.vue";
+import EditDialog from "@/views/devAssets/components/EditDialog.vue";
 import { ASSET_TYPE_OPTIONS } from "@/views/devAssets/config";
 
 const route = useRoute();
-const router = useRouter();
 
 const loading = ref(false);
 const assetList = ref<DevAsset.ResAssetList[]>([]);
@@ -130,6 +144,44 @@ const syncFromRoute = () => {
     pageable.pageNum = 1;
     fetchList();
   }
+};
+
+// ─── 弹窗状态 ───────────────────────────────────────────────
+const detailVisible = ref(false);
+const currentAssetId = ref<number | null>(null);
+
+const editVisible = ref(false);
+const editAssetId = ref<number | null>(null);
+
+/** 打开详情弹窗 */
+const openDetail = (assetId: number) => {
+  currentAssetId.value = assetId;
+  detailVisible.value = true;
+};
+
+/** 从详情弹窗点击「编辑」：关闭详情，打开编辑 */
+const openEditFromDetail = (assetId: number) => {
+  detailVisible.value = false;
+  editAssetId.value = assetId;
+  editVisible.value = true;
+};
+
+/** 从详情弹窗点击「基于此资产创建」：关闭详情，打开新增 */
+const openCreateFromDetail = (newAssetId: number) => {
+  detailVisible.value = false;
+  editAssetId.value = newAssetId;
+  editVisible.value = true;
+};
+
+/** 「新增资产」按钮 */
+const openCreateDialog = () => {
+  editAssetId.value = null;
+  editVisible.value = true;
+};
+
+/** 编辑/新增保存后刷新列表 */
+const handleEditSaved = () => {
+  fetchList();
 };
 
 onMounted(() => {

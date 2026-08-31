@@ -22,14 +22,14 @@
         </el-input>
         <span class="home-hero__hint">Enter 搜索 · Ctrl + K 快捷键（V1.1 支持）</span>
       </div>
-      <el-button type="primary" size="large" :icon="Plus" @click="router.push('/devAssets/create')"> 新增资产 </el-button>
+      <el-button type="primary" size="large" :icon="Plus" @click="openCreateDialog"> 新增资产 </el-button>
     </div>
 
     <!-- 最近使用 -->
     <section v-if="homeData.recentUsed.length" class="home-section">
       <h2 class="home-section__title">最近使用</h2>
       <div class="home-section__grid">
-        <AssetCard v-for="item in homeData.recentUsed" :key="item.id" :asset="item" show-copy />
+        <AssetCard v-for="item in homeData.recentUsed" :key="item.id" :asset="item" show-copy @view="openDetail" />
       </div>
     </section>
 
@@ -37,7 +37,7 @@
     <section v-if="homeData.mostUsed.length" class="home-section">
       <h2 class="home-section__title">常用资产</h2>
       <div class="home-section__grid">
-        <AssetCard v-for="item in homeData.mostUsed" :key="item.id" :asset="item" show-copy />
+        <AssetCard v-for="item in homeData.mostUsed" :key="item.id" :asset="item" show-copy @view="openDetail" />
       </div>
     </section>
 
@@ -45,7 +45,7 @@
     <section v-if="homeData.favorites.length" class="home-section">
       <h2 class="home-section__title">我的收藏</h2>
       <div class="home-section__grid">
-        <AssetCard v-for="item in homeData.favorites" :key="item.id" :asset="item" show-copy />
+        <AssetCard v-for="item in homeData.favorites" :key="item.id" :asset="item" show-copy @view="openDetail" />
       </div>
     </section>
 
@@ -53,12 +53,25 @@
     <section v-if="homeData.recentUpdated.length" class="home-section">
       <h2 class="home-section__title">最近更新</h2>
       <div class="home-section__grid">
-        <AssetCard v-for="item in homeData.recentUpdated" :key="item.id" :asset="item" show-copy />
+        <AssetCard v-for="item in homeData.recentUpdated" :key="item.id" :asset="item" show-copy @view="openDetail" />
       </div>
     </section>
 
     <!-- 空状态 -->
     <el-empty v-if="isEmpty" description="资产库还是空的，点击「新增资产」开始沉淀你的开发经验" />
+
+    <!-- 详情弹窗 -->
+    <DetailDialog
+      v-model:visible="detailVisible"
+      :asset-id="currentAssetId"
+      @edit="openEditFromDetail"
+      @create="openCreateFromDetail"
+      @deleted="fetchHome"
+      @view-detail="openDetail"
+    />
+
+    <!-- 编辑/新增弹窗 -->
+    <EditDialog v-model:visible="editVisible" :asset-id="editAssetId" @saved="handleEditSaved" />
   </div>
 </template>
 
@@ -70,6 +83,8 @@ import { useRouter } from "vue-router";
 import { getDevAssetHomeApi } from "@/api/modules/devAssets";
 import { DevAsset } from "@/api/interface";
 import AssetCard from "@/views/devAssets/components/AssetCard.vue";
+import DetailDialog from "@/views/devAssets/components/DetailDialog.vue";
+import EditDialog from "@/views/devAssets/components/EditDialog.vue";
 
 const router = useRouter();
 const keyword = ref("");
@@ -95,6 +110,44 @@ const fetchHome = async () => {
 
 const goSearch = () => {
   router.push({ path: "/devAssets/list", query: keyword.value ? { keyword: keyword.value } : {} });
+};
+
+// ─── 弹窗状态 ───────────────────────────────────────────────
+const detailVisible = ref(false);
+const currentAssetId = ref<number | null>(null);
+
+const editVisible = ref(false);
+const editAssetId = ref<number | null>(null);
+
+/** 打开详情弹窗 */
+const openDetail = (assetId: number) => {
+  currentAssetId.value = assetId;
+  detailVisible.value = true;
+};
+
+/** 从详情弹窗点击「编辑」：关闭详情，打开编辑 */
+const openEditFromDetail = (assetId: number) => {
+  detailVisible.value = false;
+  editAssetId.value = assetId;
+  editVisible.value = true;
+};
+
+/** 从详情弹窗点击「基于此资产创建」：关闭详情，打开新增 */
+const openCreateFromDetail = (newAssetId: number) => {
+  detailVisible.value = false;
+  editAssetId.value = newAssetId;
+  editVisible.value = true;
+};
+
+/** 首页「新增资产」按钮 */
+const openCreateDialog = () => {
+  editAssetId.value = null;
+  editVisible.value = true;
+};
+
+/** 编辑/新增保存后刷新首页数据 */
+const handleEditSaved = () => {
+  fetchHome();
 };
 
 onMounted(fetchHome);

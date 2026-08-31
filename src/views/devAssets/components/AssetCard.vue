@@ -28,7 +28,6 @@
 import { StarFilled } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import dayjs from "dayjs";
-import { useRouter } from "vue-router";
 
 import { getDevAssetDetailApi, recordDevAssetCopyApi } from "@/api/modules/devAssets";
 import { DevAsset } from "@/api/interface";
@@ -39,10 +38,12 @@ const props = defineProps<{
   showCopy?: boolean;
 }>();
 
-const router = useRouter();
+const emit = defineEmits<{
+  (e: "view", assetId: number): void;
+}>();
 
 const goDetail = () => {
-  router.push(`/devAssets/detail/${props.asset.id}`);
+  emit("view", props.asset.id);
 };
 
 /**
