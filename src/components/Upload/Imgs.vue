@@ -50,6 +50,7 @@ import { ElNotification, formContextKey, formItemContextKey } from "element-plus
 import { computed, inject, ref, watch } from "vue";
 
 import { uploadImg } from "@/api/modules/upload";
+import { compressImage } from "@/utils/compressImage";
 
 interface UploadFileProps {
   fileList?: UploadUserFile[];
@@ -125,7 +126,8 @@ const beforeUpload: UploadProps["beforeUpload"] = rawFile => {
  * */
 const handleHttpUpload = async (options: UploadRequestOptions) => {
   let formData = new FormData();
-  formData.append("file", options.file);
+  const compressedFile = await compressImage(options.file);
+  formData.append("file", compressedFile);
   try {
     const api = props.api ?? uploadImg;
     const { data } = await api(formData);

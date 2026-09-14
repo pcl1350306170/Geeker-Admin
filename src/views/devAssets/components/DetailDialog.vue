@@ -191,7 +191,7 @@ watch(
   display: flex;
   flex-direction: column;
   max-height: 75vh;
-  padding: 0 4px;
+  padding: 4px 12px;
 }
 .detail-header {
   display: flex;
@@ -247,11 +247,16 @@ watch(
 }
 .detail-content {
   flex: 1;
-  padding-top: 8px;
+  padding: 16px 12px;
   overflow-y: auto;
   :deep(.md-editor-preview-wrapper) {
     width: 100%;
     padding: 8px 0;
+  }
+  :deep(img) {
+    display: block;
+    max-width: 100%;
+    margin: 16px auto;
   }
 }
 </style>
