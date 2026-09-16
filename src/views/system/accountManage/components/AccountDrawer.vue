@@ -24,6 +24,25 @@
       <el-form-item label="昵称" prop="nickname">
         <el-input v-model="drawerProps.row!.nickname" placeholder="请填写昵称" clearable></el-input>
       </el-form-item>
+      <el-form-item label="所属部门" prop="deptId">
+        <el-tree-select
+          v-model="drawerProps.row!.deptId"
+          :data="departmentTreeData"
+          :props="{ label: 'label', children: 'children' }"
+          node-key="value"
+          check-strictly
+          :render-after-expand="false"
+          default-expand-all
+          clearable
+          placeholder="请选择所属部门"
+          style="width: 100%"
+        />
+      </el-form-item>
+      <el-form-item label="数据范围" prop="dataScope">
+        <el-select v-model="drawerProps.row!.dataScope" placeholder="请选择数据范围" style="width: 100%">
+          <el-option v-for="item in dataScopeEnum" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
+      </el-form-item>
       <el-form-item v-if="!isEdit" label="密码" prop="password">
         <el-input
           v-model="drawerProps.row!.password"
@@ -66,7 +85,8 @@ import { ElMessage, FormInstance } from "element-plus";
 import md5 from "md5";
 import { computed, ref } from "vue";
 
-import { Account } from "@/api/interface";
+import { Account, Department } from "@/api/interface";
+import { getDepartmentTreeApi } from "@/api/modules/department";
 import UploadImg from "@/components/Upload/Img.vue";
 
 interface DrawerProps {
@@ -86,6 +106,13 @@ const drawerProps = ref<DrawerProps>({
 
 const isEdit = computed(() => drawerProps.value.title === "编辑");
 
+// 数据范围字典（与后端 UserService.SCOPE_* 对应）
+const dataScopeEnum = [
+  { label: "全部数据", value: 1 },
+  { label: "本部门", value: 2 },
+  { label: "本部门及以下", value: 3 }
+];
+
 const rules = computed(() => ({
   username: [{ required: true, message: "请填写用户名", trigger: "blur" }],
   nickname: [{ required: true, message: "请填写昵称", trigger: "blur" }],
@@ -93,10 +120,31 @@ const rules = computed(() => ({
 }));
 
 // 接收父组件传过来的参数
-const acceptParams = (params: DrawerProps) => {
+const acceptParams = async (params: DrawerProps) => {
   drawerProps.value = params;
   drawerProps.value.row.status ??= 1;
+  drawerProps.value.row.dataScope ??= 1;
+  await loadDepartmentTree();
   drawerVisible.value = true;
+};
+
+// 所属部门下拉树数据
+interface DepartmentTreeNode {
+  value: number;
+  label: string;
+  children?: DepartmentTreeNode[];
+}
+const departmentTreeData = ref<DepartmentTreeNode[]>([]);
+const buildTreeSelectData = (departments: Department.ResDepartmentList[]): DepartmentTreeNode[] => {
+  return departments.map(item => ({
+    value: item.id,
+    label: item.name,
+    children: item.children?.length ? buildTreeSelectData(item.children) : undefined
+  }));
+};
+const loadDepartmentTree = async () => {
+  const { data } = await getDepartmentTreeApi();
+  departmentTreeData.value = buildTreeSelectData(data);
 };
 
 // 提交数据（新增/编辑）

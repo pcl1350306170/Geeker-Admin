@@ -215,6 +215,7 @@ export namespace Account {
     username?: string;
     nickname?: string;
     status?: number | "";
+    deptId?: number | "";
   }
   // 账号信息
   export interface ResAccountList {
@@ -223,6 +224,9 @@ export namespace Account {
     nickname: string;
     avatar: string;
     status: number;
+    deptId: number | null;
+    deptName: string | null;
+    dataScope: number | null;
     createTime: string;
   }
   // 新增/编辑参数（password 为 MD5 后的值）
@@ -233,5 +237,32 @@ export namespace Account {
     nickname?: string;
     avatar?: string;
     status?: number;
+    deptId?: number | null;
+    dataScope?: number | null;
   }
+}
+
+// 部门管理模块
+export namespace Department {
+  // 查询参数（树形列表，不分页）
+  export interface ReqDepartmentParams {
+    name?: string;
+    status?: number | "";
+  }
+  // 部门信息（与后端 sys_department 对应）
+  export interface ResDepartmentList {
+    id: number;
+    parentId: number;
+    name: string;
+    code: string;
+    leader: string;
+    phone: string;
+    email: string;
+    sort: number;
+    status: number;
+    createTime: string;
+    children?: ResDepartmentList[];
+  }
+  // 新增/编辑参数
+  export type ReqSaveDepartment = Partial<ResDepartmentList>;
 }

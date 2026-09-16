@@ -33,6 +33,7 @@ import {
   resetAccountPwdApi,
   updateAccountApi
 } from "@/api/modules/account";
+import { getDepartmentTreeApi } from "@/api/modules/department";
 import ProTable from "@/components/ProTable/index.vue";
 import { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 import { useAuthButtons } from "@/hooks/useAuthButtons";
@@ -60,11 +61,31 @@ const statusEnum = [
   { label: "禁用", value: 0 }
 ];
 
+// 数据范围字典（本地，与后端 UserService.SCOPE_* 对应）
+const dataScopeEnum = [
+  { label: "全部数据", value: 1 },
+  { label: "本部门", value: 2 },
+  { label: "本部门及以下", value: 3 }
+];
+
 // 表格配置项
 const columns = reactive<ColumnProps<Account.ResAccountList>[]>([
   { type: "index", label: "#", width: 60 },
   { prop: "username", label: "用户名", search: { el: "input" } },
   { prop: "nickname", label: "昵称", search: { el: "input" } },
+  {
+    prop: "deptName",
+    label: "所属部门",
+    minWidth: 140,
+    // enum 仅作为部门树搜索项的数据源，单元格直接展示后端返回的 deptName
+    isFilterEnum: false,
+    search: { el: "tree-select", key: "deptId", props: { checkStrictly: true, clearable: true } },
+    fieldNames: { label: "name", value: "id", children: "children" },
+    enum: async () => {
+      const { data } = await getDepartmentTreeApi();
+      return { data };
+    }
+  },
   {
     prop: "avatar",
     label: "头像",
@@ -96,6 +117,16 @@ const columns = reactive<ColumnProps<Account.ResAccountList>[]>([
           )}
         </>
       );
+    }
+  },
+  {
+    prop: "dataScope",
+    label: "数据范围",
+    width: 130,
+    align: "center",
+    render: scope => {
+      const item = dataScopeEnum.find(d => d.value === scope.row.dataScope);
+      return <el-tag type="info">{item ? item.label : "全部数据"}</el-tag>;
     }
   },
   {
