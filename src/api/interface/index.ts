@@ -510,6 +510,7 @@ export namespace NovelRelation {
     type: string;
     isHead: number;
     sub: string;
+    generation?: string;
   }
   // 图谱边
   export interface GraphEdge {

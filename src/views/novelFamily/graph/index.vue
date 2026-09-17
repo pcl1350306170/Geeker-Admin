@@ -21,7 +21,11 @@
         <el-option v-for="item in familyOptions" :key="item.id" :label="item.name" :value="item.id" />
       </el-select>
       <span class="toolbar__hint">
-        {{ scope === "families" ? "节点=家族，连线=家族间关系；支持拖拽、缩放" : "节点=成员，连线=成员间关系；支持拖拽、缩放" }}
+        {{
+          scope === "families"
+            ? "节点=家族，连线=家族间关系；支持拖拽、缩放"
+            : "成员按辈分从上到下分层展示，同辈横向排开；点击人物可查看其全部关系，支持拖拽、缩放"
+        }}
       </span>
     </div>
 
@@ -29,6 +33,26 @@
     <div v-loading="loading" class="graph-body">
       <div v-if="nodes.length" ref="chartRef" class="graph-body__chart" />
       <el-empty v-else :description="emptyText" />
+
+      <!-- 人物关系面板 -->
+      <transition name="el-fade-in">
+        <div v-if="scope === 'members' && selectedMember" class="member-panel">
+          <div class="member-panel__head">
+            <span class="member-panel__name">{{ selectedMember.name }}</span>
+            <span class="member-panel__close" @click="closePanel">×</span>
+          </div>
+          <div v-if="memberMetaTags.length" class="member-panel__meta">
+            <span v-for="tag in memberMetaTags" :key="tag" class="member-panel__tag">{{ tag }}</span>
+          </div>
+          <div class="member-panel__list">
+            <div v-if="!memberRelations.length" class="member-panel__empty">暂无关联关系</div>
+            <div v-for="(r, i) in memberRelations" :key="i" class="member-panel__item" @click="focusMember(r.otherId)">
+              <span class="member-panel__rel">{{ r.relationLabel }}</span>
+              <span class="member-panel__other">{{ r.otherName }}</span>
+            </div>
+          </div>
+        </div>
+      </transition>
     </div>
   </div>
 </template>
@@ -59,6 +83,7 @@ const novelOptions = ref<Novel.ResNovelList[]>([]);
 const selectedNovelId = ref<number>();
 const selectedFamilyId = ref<number>();
 const chartRef = ref<HTMLDivElement>();
+const selectedMember = ref<NovelRelation.GraphNode>();
 
 let chartInstance: echarts.ECharts | null = null;
 const colorPalette = ["#3370ff", "#00b42a", "#ff7d00", "#f53f3f", "#722ed1", "#13c2c2", "#eb2f96", "#faad14", "#8c8c8c"];
@@ -68,6 +93,48 @@ const emptyText = computed(() => {
   return selectedFamilyId.value ? "该家族暂无成员，或成员之间暂无关系" : "请选择家族查看成员关系";
 });
 
+// ---------- 辈分工具 ----------
+const genNum = (g?: string) => {
+  if (!g) return Number.MAX_SAFE_INTEGER;
+  const n = parseInt(g.replace(/[^\d]/g, ""), 10);
+  return Number.isNaN(n) ? Number.MAX_SAFE_INTEGER : n;
+};
+const genLabel = (g?: string) => {
+  if (!g) return "";
+  const n = parseInt(g.replace(/[^\d]/g, ""), 10);
+  return Number.isNaN(n) ? g : `第${n}代`;
+};
+
+// ---------- 阶梯型（世系）布局：按辈分从上到下分层、同辈横向排开 ----------
+const buildGenerationLayout = (list: NovelRelation.GraphNode[], width: number, height: number) => {
+  const pos = new Map<string, [number, number]>();
+  const layers = new Map<number, NovelRelation.GraphNode[]>();
+  list.forEach(n => {
+    const key = genNum(n.generation);
+    if (!layers.has(key)) layers.set(key, []);
+    layers.get(key)!.push(n);
+  });
+  const keys = [...layers.keys()].sort((a, b) => a - b);
+  const maxPerLayer = Math.max(...keys.map(k => layers.get(k)!.length), 1);
+  const gapX = Math.max(72, Math.min(140, (width - 80) / maxPerLayer));
+  const gapY = Math.max(120, Math.min(170, (height - 120) / Math.max(keys.length, 1)));
+  const totalW = gapX * maxPerLayer;
+  const totalH = gapY * (keys.length - 1);
+  const offsetX = Math.max(20, (width - totalW) / 2);
+  const offsetY = Math.max(70, (height - totalH) / 2);
+  keys.forEach((k, i) => {
+    // 层内：家主优先
+    const members = [...layers.get(k)!].sort((a, b) => (b.isHead === 1 ? 1 : 0) - (a.isHead === 1 ? 1 : 0));
+    const rowW = gapX * members.length;
+    const startX = offsetX + (totalW - rowW) / 2 + gapX / 2;
+    members.forEach((m, j) => {
+      pos.set(m.id, [startX + j * gapX, offsetY + i * gapY]);
+    });
+  });
+  return pos;
+};
+
+// ---------- 数据加载 ----------
 const loadFamilyOptions = async () => {
   const { data } = await getFamilyListApi({
     pageNum: 1,
@@ -87,8 +154,9 @@ const loadNovelOptions = async () => {
 };
 
 const handleNovelChange = () => {
-  // 切换小说：重置家族选择、按小说刷新家族下拉与家族图
+  // 切换小说：重置家族选择与选中人物、按小说刷新家族下拉与家族图
   selectedFamilyId.value = undefined;
+  selectedMember.value = undefined;
   loadFamilyOptions();
   if (scope.value === "families") {
     loadFamilyGraph();
@@ -117,12 +185,14 @@ const loadMemberGraph = async () => {
     const { data } = await getMemberGraphApi(selectedFamilyId.value);
     nodes.value = data.nodes || [];
     edges.value = data.edges || [];
+    selectedMember.value = undefined;
   } finally {
     loading.value = false;
   }
 };
 
 const handleScopeChange = () => {
+  selectedMember.value = undefined;
   if (scope.value === "families") {
     loadFamilyGraph();
   } else {
@@ -137,9 +207,64 @@ const handleScopeChange = () => {
 
 const relationLabel = (type: string) => getDictLabel(relationTypeDict.value, type) || type;
 
+// ---------- 人物关系面板 ----------
+const memberMetaTags = computed(() => {
+  const m = selectedMember.value;
+  if (!m) return [];
+  const tags: string[] = [];
+  if (m.sub) tags.push(m.sub);
+  const gl = genLabel(m.generation);
+  if (gl) tags.push(gl);
+  if (m.isHead === 1) tags.push("家主");
+  return tags;
+});
+
+const memberRelations = computed(() => {
+  const m = selectedMember.value;
+  if (!m) return [];
+  return edges.value
+    .filter(e => e.source === m.id || e.target === m.id)
+    .map(e => {
+      const otherId = e.source === m.id ? e.target : e.source;
+      const other = nodes.value.find(n => n.id === otherId);
+      return {
+        otherId,
+        otherName: other?.name || otherId,
+        relationLabel: relationLabel(e.relationType),
+        description: e.description
+      };
+    });
+});
+
+const focusMember = (id: string) => {
+  const idx = nodes.value.findIndex(n => n.id === id);
+  if (idx >= 0) {
+    chartInstance?.dispatchAction({ type: "highlight", seriesIndex: 0, dataIndex: idx });
+  }
+};
+
+const closePanel = () => {
+  selectedMember.value = undefined;
+  chartInstance?.dispatchAction({ type: "downplay", seriesIndex: 0 });
+};
+
+const onChartClick = (params: any) => {
+  if (scope.value !== "members" || params.dataType !== "node") return;
+  const node = nodes.value.find(n => n.id === params.data?.id);
+  if (node) {
+    selectedMember.value = node;
+    focusMember(node.id);
+  }
+};
+
+// ---------- 图表 ----------
 const buildOption = (): echarts.EChartsOption => {
   const isFamilies = scope.value === "families";
-  // 分类：家族总览按家族类型，成员关系按角色定位
+  const width = chartRef.value?.clientWidth || 1200;
+  const height = chartRef.value?.clientHeight || 700;
+  // 成员关系图：按辈分计算阶梯坐标；家族总览图保持力导向布局
+  const pos = isFamilies ? null : buildGenerationLayout(nodes.value, width, height);
+
   const categoryMap = new Map<string, string>();
   nodes.value.forEach(n => {
     const type = n.type || "";
@@ -163,6 +288,10 @@ const buildOption = (): echarts.EChartsOption => {
         const statusLabel = isFamilies ? getDictLabel(familyStatusDict.value, n.type) : "";
         const lines = [`<b>${n.name}</b>`];
         if (n.sub) lines.push(n.sub);
+        if (!isFamilies) {
+          const gl = genLabel(n.generation);
+          if (gl) lines.push(gl);
+        }
         if (typeLabel) lines.push(typeLabel);
         if (isFamilies && statusLabel) lines.push(statusLabel);
         if (n.isHead === 1) lines.push("家主");
@@ -178,18 +307,21 @@ const buildOption = (): echarts.EChartsOption => {
     series: [
       {
         type: "graph",
-        layout: "force",
+        layout: isFamilies ? "force" : "none",
         roam: true,
         draggable: true,
         data: nodes.value.map(n => {
           const categoryIndex = [...categoryMap.keys()].indexOf(n.type || "");
           const isHead = n.isHead === 1;
+          const p = pos?.get(n.id);
           return {
             id: n.id,
             name: n.name,
             category: categoryMap.get(n.type || "") || "未分类",
             sourceName: n.name,
             symbolSize: isFamilies ? (isHead ? 62 : 52) : isHead ? 54 : 42,
+            x: p?.[0],
+            y: p?.[1],
             itemStyle: {
               color: colorPalette[categoryIndex % colorPalette.length],
               borderColor: isHead ? "#f53f3f" : "#fff",
@@ -200,18 +332,26 @@ const buildOption = (): echarts.EChartsOption => {
         links: edges.value.map(e => {
           const srcNode = nodes.value.find(n => n.id === e.source);
           const tgtNode = nodes.value.find(n => n.id === e.target);
+          const sameRow = pos ? pos.get(e.source)?.[1] === pos.get(e.target)?.[1] : false;
           return {
             source: e.source,
             target: e.target,
             relationType: e.relationType,
             sourceName: srcNode?.name || "",
             targetName: tgtNode?.name || "",
-            label: { show: true, formatter: relationLabel(e.relationType), fontSize: 10, color: "#86909c" }
+            label: { show: true, formatter: relationLabel(e.relationType), fontSize: 10, color: "#86909c" },
+            lineStyle: isFamilies ? undefined : { curveness: sameRow ? 0.3 : 0.04 }
           };
         }),
         categories: categories.map((c, i) => ({ name: c, itemStyle: { color: colorPalette[i % colorPalette.length] } })),
-        force: { repulsion: 320, edgeLength: 140, gravity: 0.08 },
-        label: { show: true, position: "right", fontSize: 12, color: "#1f2329", formatter: (p: any) => p.name },
+        force: isFamilies ? { repulsion: 320, edgeLength: 140, gravity: 0.08 } : undefined,
+        label: {
+          show: true,
+          position: isFamilies ? "right" : "bottom",
+          fontSize: 12,
+          color: "#1f2329",
+          formatter: (p: any) => p.name
+        },
         lineStyle: { color: "source", curveness: 0.12, width: 1.5, opacity: 0.7 },
         emphasis: {
           focus: "adjacency",
@@ -233,12 +373,17 @@ const renderChart = () => {
   if (!chartInstance || chartInstance.getDom() !== chartRef.value) {
     chartInstance?.dispose();
     chartInstance = echarts.init(chartRef.value);
+    chartInstance.on("click", onChartClick);
   }
   chartInstance.setOption(buildOption(), { notMerge: true });
 };
 
 const handleResize = () => {
   chartInstance?.resize();
+  // 阶梯型布局按容器尺寸计算坐标，需重算
+  if (scope.value === "members") {
+    nextTick(renderChart);
+  }
 };
 
 watch([nodes, edges], () => {
@@ -283,6 +428,7 @@ onBeforeUnmount(() => {
   color: #86909c;
 }
 .graph-body {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -295,5 +441,90 @@ onBeforeUnmount(() => {
 .graph-body__chart {
   width: 100%;
   height: 100%;
+}
+.member-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e5e6eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
+}
+.member-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0f1f2;
+}
+.member-panel__name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+.member-panel__close {
+  padding: 0 2px;
+  font-size: 18px;
+  line-height: 1;
+  color: #86909c;
+  cursor: pointer;
+}
+.member-panel__close:hover {
+  color: #1f2329;
+}
+.member-panel__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0f1f2;
+}
+.member-panel__tag {
+  padding: 2px 8px;
+  font-size: 12px;
+  color: #4e5969;
+  background: #f2f3f5;
+  border-radius: 4px;
+}
+.member-panel__list {
+  flex: 1;
+  padding: 8px;
+  overflow: auto;
+}
+.member-panel__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.member-panel__item:hover {
+  background: #f2f3f5;
+}
+.member-panel__rel {
+  flex-shrink: 0;
+  margin-right: 8px;
+  font-size: 12px;
+  color: #4e5969;
+}
+.member-panel__other {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1f2329;
+}
+.member-panel__empty {
+  padding: 24px 0;
+  font-size: 12px;
+  color: #86909c;
+  text-align: center;
 }
 </style>
