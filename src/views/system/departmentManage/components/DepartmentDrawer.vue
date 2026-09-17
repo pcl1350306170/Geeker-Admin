@@ -51,7 +51,7 @@
 </template>
 
 <script setup lang="ts" name="DepartmentDrawer">
-import { ElMessage, FormInstance } from "element-plus";
+import { ElMessage, FormInstance, FormRules } from "element-plus";
 import { ref } from "vue";
 
 import { Department } from "@/api/interface";
@@ -73,7 +73,7 @@ const drawerProps = ref<DrawerProps>({
   departmentTree: []
 });
 
-const rules = {
+const rules: FormRules = {
   name: [{ required: true, message: "请填写部门名称", trigger: "blur" }],
   email: [{ type: "email", message: "请填写正确的邮箱", trigger: "blur" }]
 };

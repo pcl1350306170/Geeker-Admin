@@ -39,7 +39,7 @@
         />
       </el-form-item>
       <el-form-item label="数据范围" prop="dataScope">
-        <el-select v-model="drawerProps.row!.dataScope" placeholder="请选择数据范围" style="width: 100%">
+        <el-select v-model="dataScopeModel" placeholder="请选择数据范围" style="width: 100%">
           <el-option v-for="item in dataScopeEnum" :key="item.value" :label="item.label" :value="Number(item.value)" />
         </el-select>
       </el-form-item>
@@ -116,6 +116,15 @@ const rules = computed(() => ({
   nickname: [{ required: true, message: "请填写昵称", trigger: "blur" }],
   password: [{ required: !isEdit.value, message: "请填写密码", trigger: "blur" }]
 }));
+
+// el-select 的 modelValue 不接受 null，而 ReqSaveAccount.dataScope 允许 null；
+// 这里用 computed getter/setter 桥接 null ↔ undefined，避免修改接口类型影响调用方。
+const dataScopeModel = computed<number | undefined>({
+  get: () => drawerProps.value.row.dataScope ?? undefined,
+  set: val => {
+    drawerProps.value.row.dataScope = val ?? null;
+  }
+});
 
 // 接收父组件传过来的参数
 const acceptParams = async (params: DrawerProps) => {
