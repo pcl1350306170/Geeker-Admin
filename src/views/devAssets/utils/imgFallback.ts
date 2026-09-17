@@ -7,6 +7,15 @@
 const CDN_PREFIX = "https://cdn.jsdelivr.net/gh/pcl1350306170/image-cdn@refs/heads/main/Upload/";
 const LOCAL_PREFIX = "/api/geeker/file/img/";
 
+/**
+ * 将 CDN 图片地址转为后端本地直出地址（非 CDN 地址原样返回）
+ * 供缩略图 el-image 加载失败时手动回退使用
+ */
+export const toLocalImgUrl = (url: string): string => {
+  if (!url || !url.startsWith(CDN_PREFIX)) return url;
+  return LOCAL_PREFIX + url.substring(url.lastIndexOf("/") + 1);
+};
+
 export const setupImgCdnFallback = (container: HTMLElement) => {
   container.addEventListener(
     "error",

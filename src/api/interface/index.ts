@@ -156,6 +156,18 @@ export namespace DevAsset {
     parentId: number | null;
     updatedAt: string;
   }
+  // 订单预览项（列表项 + 正文首图缩略图）
+  export interface ResAssetPreview {
+    id: number;
+    title: string;
+    description: string;
+    type: AssetType;
+    tags: string[];
+    coverImage: string | null;
+    isFavorite: number;
+    usageCount: number;
+    updatedAt: string;
+  }
   // 详情（含正文）
   export interface ResAssetDetail {
     id: number;

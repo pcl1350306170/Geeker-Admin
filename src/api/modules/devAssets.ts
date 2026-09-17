@@ -17,6 +17,16 @@ export const getDevAssetListApi = (params: DevAsset.ReqQueryParams) => {
 };
 
 /**
+ * @description 订单预览（按标签筛选，返回带正文首图缩略图的列表）
+ */
+export const getDevAssetOrderPreviewApi = (params: DevAsset.ReqQueryParams) => {
+  return http.get<ResPage<DevAsset.ResAssetPreview>>(DEV_ASSET_PORT + `/order-preview`, params, {
+    loading: false,
+    cancel: false
+  });
+};
+
+/**
  * @description 资产详情（后端记录 VIEW）
  */
 export const getDevAssetDetailApi = (id: number) => {
