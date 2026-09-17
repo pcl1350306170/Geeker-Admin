@@ -49,7 +49,7 @@ module.exports = {
     "vue/v-slot-style": "error", // 强制执行 v-slot 指令样式
     "vue/no-mutating-props": "error", // 不允许改变组件 prop
     "vue/custom-event-name-casing": "error", // 为自定义事件名称强制使用特定大小写
-    "vue/html-closing-bracket-newline": "error", // 在标签的右括号之前要求或禁止换行
+    "vue/html-closing-bracket-newline": "off", // 交由 prettier 统一处理标签右括号换行，避免与 prettier/prettier 冲突
     "vue/attribute-hyphenation": "error", // 对模板中的自定义组件强制执行属性命名样式：my-prop="prop"
     "vue/attributes-order": "off", // vue api使用顺序，强制执行属性顺序
     "vue/no-v-html": "off", // 禁止使用 v-html

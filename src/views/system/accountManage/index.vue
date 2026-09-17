@@ -21,7 +21,7 @@
 import { CirclePlus, Delete, Download, EditPen, Refresh } from "@element-plus/icons-vue";
 import dayjs from "dayjs";
 import { ElMessageBox } from "element-plus";
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 
 import { Account } from "@/api/interface";
 import {
@@ -37,6 +37,7 @@ import { getDepartmentTreeApi } from "@/api/modules/department";
 import ProTable from "@/components/ProTable/index.vue";
 import { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 import { useAuthButtons } from "@/hooks/useAuthButtons";
+import { useDict } from "@/hooks/useDict";
 import { useDownload } from "@/hooks/useDownload";
 import { useHandleData } from "@/hooks/useHandleData";
 import AccountDrawer from "@/views/system/accountManage/components/AccountDrawer.vue";
@@ -55,18 +56,10 @@ const dataCallback = (data: any) => {
 // 页面按钮权限
 const { BUTTONS } = useAuthButtons();
 
-// 状态字典（本地）
-const statusEnum = [
-  { label: "启用", value: 1 },
-  { label: "禁用", value: 0 }
-];
-
-// 数据范围字典（本地，与后端 UserService.SCOPE_* 对应）
-const dataScopeEnum = [
-  { label: "全部数据", value: 1 },
-  { label: "本部门", value: 2 },
-  { label: "本部门及以下", value: 3 }
-];
+// 状态字典、数据范围字典（改为全局字典 sys_status/sys_data_scope，可在字典管理页面统一维护）
+const { sys_status, sys_data_scope } = useDict("sys_status", "sys_data_scope");
+const statusEnum = computed(() => sys_status.value.map(item => ({ label: item.label, value: Number(item.value) })));
+const dataScopeEnum = computed(() => sys_data_scope.value.map(item => ({ label: item.label, value: Number(item.value) })));
 
 // 表格配置项
 const columns = reactive<ColumnProps<Account.ResAccountList>[]>([
@@ -125,7 +118,7 @@ const columns = reactive<ColumnProps<Account.ResAccountList>[]>([
     width: 130,
     align: "center",
     render: scope => {
-      const item = dataScopeEnum.find(d => d.value === scope.row.dataScope);
+      const item = dataScopeEnum.value.find(d => d.value === scope.row.dataScope);
       return <el-tag type="info">{item ? item.label : "全部数据"}</el-tag>;
     }
   },

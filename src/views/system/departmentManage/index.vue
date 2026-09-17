@@ -34,7 +34,7 @@
 import { CirclePlus, Delete, Download, EditPen, Expand, Fold, Plus } from "@element-plus/icons-vue";
 import dayjs from "dayjs";
 import { ElMessageBox } from "element-plus";
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 
 import { Department } from "@/api/interface";
 import {
@@ -48,6 +48,7 @@ import {
 import ProTable from "@/components/ProTable/index.vue";
 import { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 import { useAuthButtons } from "@/hooks/useAuthButtons";
+import { useDict } from "@/hooks/useDict";
 import { useDownload } from "@/hooks/useDownload";
 import { useHandleData } from "@/hooks/useHandleData";
 import DepartmentDrawer from "@/views/system/departmentManage/components/DepartmentDrawer.vue";
@@ -58,11 +59,9 @@ const proTable = ref<ProTableInstance>();
 // 页面按钮权限
 const { BUTTONS } = useAuthButtons();
 
-// 状态字典（本地）
-const statusEnum = [
-  { label: "启用", value: 1 },
-  { label: "禁用", value: 0 }
-];
+// 状态字典（改为全局字典 sys_status，可在字典管理页面统一维护）
+const { sys_status } = useDict("sys_status");
+const statusEnum = computed(() => sys_status.value.map(item => ({ label: item.label, value: Number(item.value) })));
 
 // 表格配置项
 const columns = reactive<ColumnProps<Department.ResDepartmentList>[]>([

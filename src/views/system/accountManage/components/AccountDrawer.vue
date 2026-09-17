@@ -40,7 +40,7 @@
       </el-form-item>
       <el-form-item label="数据范围" prop="dataScope">
         <el-select v-model="drawerProps.row!.dataScope" placeholder="请选择数据范围" style="width: 100%">
-          <el-option v-for="item in dataScopeEnum" :key="item.value" :label="item.label" :value="item.value" />
+          <el-option v-for="item in dataScopeEnum" :key="item.value" :label="item.label" :value="Number(item.value)" />
         </el-select>
       </el-form-item>
       <el-form-item v-if="!isEdit" label="密码" prop="password">
@@ -88,6 +88,7 @@ import { computed, ref } from "vue";
 import { Account, Department } from "@/api/interface";
 import { getDepartmentTreeApi } from "@/api/modules/department";
 import UploadImg from "@/components/Upload/Img.vue";
+import { useDict } from "@/hooks/useDict";
 
 interface DrawerProps {
   title: string;
@@ -106,12 +107,9 @@ const drawerProps = ref<DrawerProps>({
 
 const isEdit = computed(() => drawerProps.value.title === "编辑");
 
-// 数据范围字典（与后端 UserService.SCOPE_* 对应）
-const dataScopeEnum = [
-  { label: "全部数据", value: 1 },
-  { label: "本部门", value: 2 },
-  { label: "本部门及以下", value: 3 }
-];
+// 数据范围字典（改为全局字典 sys_data_scope，与后端 UserService.SCOPE_* 对应）
+const { sys_data_scope } = useDict("sys_data_scope");
+const dataScopeEnum = computed(() => sys_data_scope.value);
 
 const rules = computed(() => ({
   username: [{ required: true, message: "请填写用户名", trigger: "blur" }],

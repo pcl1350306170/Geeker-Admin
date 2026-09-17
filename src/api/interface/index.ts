@@ -278,3 +278,235 @@ export namespace Department {
   // 新增/编辑参数
   export type ReqSaveDepartment = Partial<ResDepartmentList>;
 }
+
+// 字典管理模块
+export namespace Dict {
+  // 字典类型查询参数
+  export interface ReqDictTypeParams extends ReqPage {
+    name?: string;
+    type?: string;
+    status?: number | "";
+  }
+  // 字典类型信息（与后端 sys_dict_type 对应）
+  export interface ResDictType {
+    id: number;
+    name: string;
+    type: string;
+    status: number;
+    remark: string;
+    createTime: string;
+    updateTime: string;
+  }
+  // 字典类型新增/编辑参数
+  export type ReqSaveDictType = Partial<ResDictType>;
+
+  // 字典数据查询参数
+  export interface ReqDictDataParams extends ReqPage {
+    dictType?: string;
+    label?: string;
+    status?: number | "";
+  }
+  // 字典数据信息（与后端 sys_dict_data 对应）
+  export interface ResDictData {
+    id: number;
+    dictType: string;
+    dictTypeName?: string;
+    label: string;
+    value: string;
+    sort: number;
+    status: number;
+    listClass: string;
+    isDefault: number;
+    remark: string;
+    createTime: string;
+    updateTime: string;
+  }
+  // 字典数据新增/编辑参数
+  export type ReqSaveDictData = Partial<ResDictData>;
+}
+
+// ========== 小说家族管理 ==========
+
+export namespace NovelFamily {
+  // 查询参数
+  export interface ReqQueryParams extends ReqPage {
+    keyword?: string;
+    type?: string;
+    status?: string;
+  }
+  // 列表项（含成员数统计）
+  export interface ResFamilyList {
+    id: number;
+    name: string;
+    alias: string;
+    type: string;
+    status: string;
+    introduction: string;
+    emblem: string;
+    cover: string;
+    memberCount: number;
+    coreCount: number;
+    updatedAt: string;
+  }
+  // 详情（含背景故事、家主）
+  export interface ResFamilyDetail {
+    id: number;
+    name: string;
+    alias: string;
+    type: string;
+    status: string;
+    introduction: string;
+    background: string;
+    creed: string;
+    territory: string;
+    emblem: string;
+    cover: string;
+    sort: number;
+    memberCount: number;
+    coreCount: number;
+    headName: string;
+    createdBy: string;
+    createdAt: string;
+    updatedAt: string;
+  }
+  // 新增/编辑参数
+  export interface ReqSaveFamily {
+    name?: string;
+    alias?: string;
+    type?: string;
+    status?: string;
+    introduction?: string;
+    background?: string;
+    creed?: string;
+    territory?: string;
+    emblem?: string;
+    cover?: string;
+    sort?: number;
+  }
+}
+
+export namespace NovelMember {
+  // 查询参数
+  export interface ReqQueryParams extends ReqPage {
+    keyword?: string;
+    familyId?: number;
+    generation?: string;
+    roleType?: string;
+    isCore?: number;
+  }
+  // 列表项（含家族名）
+  export interface ResMemberList {
+    id: number;
+    familyId: number;
+    familyName: string;
+    name: string;
+    alias: string;
+    gender: string;
+    generation: string;
+    title: string;
+    roleType: string;
+    age: number;
+    isHead: number;
+    isCore: number;
+    sort: number;
+    updatedAt: string;
+  }
+  // 详情（含性格标签、人物小传）
+  export interface ResMemberDetail {
+    id: number;
+    familyId: number;
+    familyName: string;
+    name: string;
+    alias: string;
+    gender: string;
+    generation: string;
+    title: string;
+    roleType: string;
+    age: number;
+    personality: string[];
+    appearance: string;
+    bio: string;
+    isHead: number;
+    isCore: number;
+    sort: number;
+    createdBy: string;
+    createdAt: string;
+    updatedAt: string;
+  }
+  // 新增/编辑参数
+  export interface ReqSaveMember {
+    familyId?: number;
+    name?: string;
+    alias?: string;
+    gender?: string;
+    generation?: string;
+    title?: string;
+    roleType?: string;
+    age?: number;
+    personality?: string[];
+    appearance?: string;
+    bio?: string;
+    isHead?: number;
+    isCore?: number;
+    sort?: number;
+  }
+}
+
+export namespace NovelRelation {
+  // 查询参数
+  export interface ReqQueryParams extends ReqPage {
+    relationType?: string;
+    memberId?: number;
+    familyId?: number;
+    status?: string;
+  }
+  // 关系项（两端带显示名）
+  export interface ResRelation {
+    id: number;
+    sourceType: string;
+    sourceId: number;
+    sourceName: string;
+    sourceSub: string;
+    targetType: string;
+    targetId: number;
+    targetName: string;
+    targetSub: string;
+    relationType: string;
+    description: string;
+    status: string;
+    createdBy: string;
+    createdAt: string;
+  }
+  // 新增参数
+  export interface ReqSaveRelation {
+    sourceType?: string;
+    sourceId?: number;
+    targetType?: string;
+    targetId?: number;
+    relationType?: string;
+    description?: string;
+    status?: string;
+  }
+  // 图谱节点
+  export interface GraphNode {
+    id: string;
+    name: string;
+    category: string;
+    familyId: number;
+    type: string;
+    isHead: number;
+    sub: string;
+  }
+  // 图谱边
+  export interface GraphEdge {
+    source: string;
+    target: string;
+    relationType: string;
+    description: string;
+  }
+  // 图谱数据
+  export interface ResGraph {
+    nodes: GraphNode[];
+    edges: GraphEdge[];
+  }
+}

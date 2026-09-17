@@ -32,12 +32,13 @@
 <script setup lang="tsx" name="menuMange">
 import * as Icons from "@element-plus/icons-vue";
 import { CirclePlus, Delete, EditPen, Expand, Fold, Plus } from "@element-plus/icons-vue";
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 
 import { MenuManage } from "@/api/interface";
 import { addMenuApi, deleteMenuApi, getMenuAllListApi, updateMenuApi } from "@/api/modules/menu";
 import ProTable from "@/components/ProTable/index.vue";
 import { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
+import { useDict } from "@/hooks/useDict";
 import { useHandleData } from "@/hooks/useHandleData";
 import { useAuthStore } from "@/stores/modules/auth";
 import MenuDrawer from "@/views/auth/menu/components/MenuDrawer.vue";
@@ -47,11 +48,9 @@ const authStore = useAuthStore();
 // ProTable 实例
 const proTable = ref<ProTableInstance>();
 
-// 状态字典（本地）
-const statusEnum = [
-  { label: "启用", value: 1 },
-  { label: "禁用", value: 0 }
-];
+// 状态字典（改为全局字典 sys_status，可在字典管理页面统一维护）
+const { sys_status } = useDict("sys_status");
+const statusEnum = computed(() => sys_status.value.map(item => ({ label: item.label, value: Number(item.value) })));
 
 // 表格配置项
 const columns = reactive<ColumnProps<MenuManage.ResMenuList>[]>([
