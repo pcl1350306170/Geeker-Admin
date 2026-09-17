@@ -518,6 +518,7 @@ export namespace NovelRelation {
     target: string;
     relationType: string;
     description: string;
+    relationId?: number;
   }
   // 图谱数据
   export interface ResGraph {

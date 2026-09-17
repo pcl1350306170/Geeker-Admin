@@ -24,7 +24,7 @@
         {{
           scope === "families"
             ? "节点=家族，连线=家族间关系；支持拖拽、缩放"
-            : "成员按辈分从上到下分层展示，同辈横向排开；点击人物可查看其全部关系，支持拖拽、缩放"
+            : "成员按辈分从上到下分层展示，同辈横向排开；点击人物可查看并编辑其关系，支持拖拽、缩放"
         }}
       </span>
     </div>
@@ -39,20 +39,36 @@
         <div v-if="scope === 'members' && selectedMember" class="member-panel">
           <div class="member-panel__head">
             <span class="member-panel__name">{{ selectedMember.name }}</span>
-            <span class="member-panel__close" @click="closePanel">×</span>
+            <div class="member-panel__actions">
+              <el-button link type="primary" size="small" :icon="Plus" @click="openRelationCreate">添加</el-button>
+              <span class="member-panel__close" @click="closePanel">×</span>
+            </div>
           </div>
           <div v-if="memberMetaTags.length" class="member-panel__meta">
             <span v-for="tag in memberMetaTags" :key="tag" class="member-panel__tag">{{ tag }}</span>
           </div>
           <div class="member-panel__list">
-            <div v-if="!memberRelations.length" class="member-panel__empty">暂无关联关系</div>
+            <div v-if="!memberRelations.length" class="member-panel__empty">暂无关联关系，点「添加」创建</div>
             <div v-for="(r, i) in memberRelations" :key="i" class="member-panel__item" @click="focusMember(r.otherId)">
-              <span class="member-panel__rel">{{ r.relationLabel }}</span>
-              <span class="member-panel__other">{{ r.otherName }}</span>
+              <div class="member-panel__info">
+                <span class="member-panel__rel">{{ r.relationLabel }}</span>
+                <span class="member-panel__other">{{ r.otherName }}</span>
+              </div>
+              <el-button link type="danger" size="small" class="member-panel__del" @click.stop="handleRelationDelete(r)">
+                删
+              </el-button>
             </div>
           </div>
         </div>
       </transition>
+
+      <!-- 添加关系弹窗（复用成员模块） -->
+      <AddRelationDialog
+        v-if="selectedMember"
+        v-model:visible="relationCreateVisible"
+        :source-member-id="getMemberNumId(selectedMember.id)"
+        @saved="loadMemberGraph"
+      />
     </div>
   </div>
 </template>
@@ -60,12 +76,15 @@
 <script setup lang="ts" name="novelGraphIndex">
 import * as echarts from "echarts";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { Plus } from "@element-plus/icons-vue";
+import { ElMessage, ElMessageBox } from "element-plus";
 
 import { getFamilyListApi } from "@/api/modules/novelFamily";
 import { getNovelAllApi } from "@/api/modules/novel";
-import { getFamilyGraphApi, getMemberGraphApi } from "@/api/modules/novelRelation";
+import { deleteRelationApi, getFamilyGraphApi, getMemberGraphApi } from "@/api/modules/novelRelation";
 import { Novel, NovelFamily, NovelRelation } from "@/api/interface";
 import { getDictLabel, useDict } from "@/hooks/useDict";
+import AddRelationDialog from "@/views/novelFamily/member/AddRelationDialog.vue";
 
 const {
   novel_family_type: familyTypeDict,
@@ -84,6 +103,7 @@ const selectedNovelId = ref<number>();
 const selectedFamilyId = ref<number>();
 const chartRef = ref<HTMLDivElement>();
 const selectedMember = ref<NovelRelation.GraphNode>();
+const relationCreateVisible = ref(false);
 
 let chartInstance: echarts.ECharts | null = null;
 const colorPalette = ["#3370ff", "#00b42a", "#ff7d00", "#f53f3f", "#722ed1", "#13c2c2", "#eb2f96", "#faad14", "#8c8c8c"];
@@ -185,7 +205,11 @@ const loadMemberGraph = async () => {
     const { data } = await getMemberGraphApi(selectedFamilyId.value);
     nodes.value = data.nodes || [];
     edges.value = data.edges || [];
-    selectedMember.value = undefined;
+    // 保留当前选中人物，便于编辑后即时刷新面板
+    const keepId = selectedMember.value?.id;
+    if (keepId) {
+      selectedMember.value = nodes.value.find(n => n.id === keepId) || undefined;
+    }
   } finally {
     loading.value = false;
   }
@@ -228,6 +252,7 @@ const memberRelations = computed(() => {
       const otherId = e.source === m.id ? e.target : e.source;
       const other = nodes.value.find(n => n.id === otherId);
       return {
+        relationId: e.relationId,
         otherId,
         otherName: other?.name || otherId,
         relationLabel: relationLabel(e.relationType),
@@ -235,6 +260,9 @@ const memberRelations = computed(() => {
       };
     });
 });
+
+// 图谱节点 ID 形如 "M47"，还原成员数字 ID（供关系添加弹窗使用）
+const getMemberNumId = (nodeId: string) => Number(nodeId.replace(/^\D+/, ""));
 
 const focusMember = (id: string) => {
   const idx = nodes.value.findIndex(n => n.id === id);
@@ -246,6 +274,31 @@ const focusMember = (id: string) => {
 const closePanel = () => {
   selectedMember.value = undefined;
   chartInstance?.dispatchAction({ type: "downplay", seriesIndex: 0 });
+};
+
+const openRelationCreate = () => {
+  relationCreateVisible.value = true;
+};
+
+const handleRelationDelete = (r: { relationId?: number; relationLabel: string; otherName: string }) => {
+  if (!r.relationId) return;
+  ElMessageBox.confirm(
+    `确定删除「${selectedMember.value?.name} × ${r.otherName}（${r.relationLabel}）」这条关系吗？`,
+    "删除确认",
+    {
+      type: "warning",
+      confirmButtonText: "删除",
+      cancelButtonText: "取消"
+    }
+  )
+    .then(async () => {
+      await deleteRelationApi(r.relationId!);
+      ElMessage.success("删除成功");
+      loadMemberGraph();
+    })
+    .catch(() => {
+      // 用户取消删除，无需处理
+    });
 };
 
 const onChartClick = (params: any) => {
@@ -461,13 +514,18 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border-bottom: 1px solid #f0f1f2;
 }
 .member-panel__name {
   font-size: 15px;
   font-weight: 600;
   color: #1f2329;
+}
+.member-panel__actions {
+  display: flex;
+  gap: 2px;
+  align-items: center;
 }
 .member-panel__close {
   padding: 0 2px;
@@ -510,6 +568,11 @@ onBeforeUnmount(() => {
 .member-panel__item:hover {
   background: #f2f3f5;
 }
+.member-panel__info {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
 .member-panel__rel {
   flex-shrink: 0;
   margin-right: 8px;
@@ -517,9 +580,20 @@ onBeforeUnmount(() => {
   color: #4e5969;
 }
 .member-panel__other {
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 13px;
   font-weight: 500;
   color: #1f2329;
+  white-space: nowrap;
+}
+.member-panel__del {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.member-panel__item:hover .member-panel__del {
+  opacity: 1;
 }
 .member-panel__empty {
   padding: 24px 0;
