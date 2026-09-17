@@ -13,3 +13,6 @@ export const NOVEL_FAMILY_PORT = "/geeker/novel/families";
 export const NOVEL_MEMBER_PORT = "/geeker/novel/members";
 // 小说家族管理-关系前缀
 export const NOVEL_RELATION_PORT = "/geeker/novel/relations";
+
+// 小说家族管理-小说前缀
+export const NOVEL_PORT = "/geeker/novel/novels";

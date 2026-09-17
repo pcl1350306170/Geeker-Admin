@@ -6,6 +6,9 @@
         <el-radio-button value="families">家族总览</el-radio-button>
         <el-radio-button value="members">成员关系</el-radio-button>
       </el-radio-group>
+      <el-select v-model="selectedNovelId" class="toolbar__novel" placeholder="全部小说" clearable @change="handleNovelChange">
+        <el-option v-for="item in novelOptions" :key="item.id" :label="item.name" :value="item.id" />
+      </el-select>
       <el-select
         v-if="scope === 'members'"
         v-model="selectedFamilyId"
@@ -35,8 +38,9 @@ import * as echarts from "echarts";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import { getFamilyListApi } from "@/api/modules/novelFamily";
+import { getNovelAllApi } from "@/api/modules/novel";
 import { getFamilyGraphApi, getMemberGraphApi } from "@/api/modules/novelRelation";
-import { NovelFamily, NovelRelation } from "@/api/interface";
+import { Novel, NovelFamily, NovelRelation } from "@/api/interface";
 import { getDictLabel, useDict } from "@/hooks/useDict";
 
 const {
@@ -51,6 +55,8 @@ const loading = ref(false);
 const nodes = ref<NovelRelation.GraphNode[]>([]);
 const edges = ref<NovelRelation.GraphEdge[]>([]);
 const familyOptions = ref<NovelFamily.ResFamilyList[]>([]);
+const novelOptions = ref<Novel.ResNovelList[]>([]);
+const selectedNovelId = ref<number>();
 const selectedFamilyId = ref<number>();
 const chartRef = ref<HTMLDivElement>();
 
@@ -63,14 +69,36 @@ const emptyText = computed(() => {
 });
 
 const loadFamilyOptions = async () => {
-  const { data } = await getFamilyListApi({ pageNum: 1, pageSize: 200 });
+  const { data } = await getFamilyListApi({
+    pageNum: 1,
+    pageSize: 200,
+    novelId: selectedNovelId.value || undefined
+  });
   familyOptions.value = data.list || [];
+};
+
+const loadNovelOptions = async () => {
+  try {
+    const { data } = await getNovelAllApi();
+    novelOptions.value = data || [];
+  } catch {
+    novelOptions.value = [];
+  }
+};
+
+const handleNovelChange = () => {
+  // 切换小说：重置家族选择、按小说刷新家族下拉与家族图
+  selectedFamilyId.value = undefined;
+  loadFamilyOptions();
+  if (scope.value === "families") {
+    loadFamilyGraph();
+  }
 };
 
 const loadFamilyGraph = async () => {
   loading.value = true;
   try {
-    const { data } = await getFamilyGraphApi();
+    const { data } = await getFamilyGraphApi(selectedNovelId.value);
     nodes.value = data.nodes || [];
     edges.value = data.edges || [];
   } finally {
@@ -196,8 +224,14 @@ const buildOption = (): echarts.EChartsOption => {
 };
 
 const renderChart = () => {
-  if (!chartRef.value) return;
-  if (!chartInstance) {
+  // 图谱容器可能因切换视图被重建，实例绑定旧 DOM 时需重新初始化
+  if (!chartRef.value) {
+    chartInstance?.dispose();
+    chartInstance = null;
+    return;
+  }
+  if (!chartInstance || chartInstance.getDom() !== chartRef.value) {
+    chartInstance?.dispose();
     chartInstance = echarts.init(chartRef.value);
   }
   chartInstance.setOption(buildOption(), { notMerge: true });
@@ -212,6 +246,7 @@ watch([nodes, edges], () => {
 });
 
 onMounted(() => {
+  loadNovelOptions();
   loadFamilyOptions();
   loadFamilyGraph();
   window.addEventListener("resize", handleResize);
@@ -239,6 +274,9 @@ onBeforeUnmount(() => {
 }
 .toolbar__family {
   width: 220px;
+}
+.toolbar__novel {
+  width: 160px;
 }
 .toolbar__hint {
   font-size: 12px;

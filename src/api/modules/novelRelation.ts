@@ -26,8 +26,8 @@ export const deleteRelationApi = (id: number) => {
 /**
  * @description 家族总览图（家族节点 + 家族间关系边）
  */
-export const getFamilyGraphApi = () => {
-  return http.get<NovelRelation.ResGraph>(NOVEL_RELATION_PORT + `/family-graph`, {}, { loading: false });
+export const getFamilyGraphApi = (novelId?: number) => {
+  return http.get<NovelRelation.ResGraph>(NOVEL_RELATION_PORT + `/family-graph`, { novelId }, { loading: false });
 };
 
 /**

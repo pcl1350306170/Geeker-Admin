@@ -333,6 +333,7 @@ export namespace NovelFamily {
     keyword?: string;
     type?: string;
     status?: string;
+    novelId?: number;
   }
   // 列表项（含成员数统计）
   export interface ResFamilyList {
@@ -345,6 +346,8 @@ export namespace NovelFamily {
     emblem: string;
     cover: string;
     memberCount: number;
+    novelId: number;
+    novelName: string;
     coreCount: number;
     updatedAt: string;
   }
@@ -362,6 +365,8 @@ export namespace NovelFamily {
     emblem: string;
     cover: string;
     sort: number;
+    novelId: number;
+    novelName: string;
     memberCount: number;
     coreCount: number;
     headName: string;
@@ -381,6 +386,7 @@ export namespace NovelFamily {
     territory?: string;
     emblem?: string;
     cover?: string;
+    novelId?: number;
     sort?: number;
   }
 }
@@ -390,6 +396,7 @@ export namespace NovelMember {
   export interface ReqQueryParams extends ReqPage {
     keyword?: string;
     familyId?: number;
+    novelId?: number;
     generation?: string;
     roleType?: string;
     isCore?: number;
@@ -399,6 +406,8 @@ export namespace NovelMember {
     id: number;
     familyId: number;
     familyName: string;
+    novelId: number;
+    novelName: string;
     name: string;
     alias: string;
     gender: string;
@@ -416,6 +425,8 @@ export namespace NovelMember {
     id: number;
     familyId: number;
     familyName: string;
+    novelId: number;
+    novelName: string;
     name: string;
     alias: string;
     gender: string;
@@ -437,6 +448,7 @@ export namespace NovelMember {
   export interface ReqSaveMember {
     familyId?: number;
     name?: string;
+    novelId?: number;
     alias?: string;
     gender?: string;
     generation?: string;
@@ -457,6 +469,7 @@ export namespace NovelRelation {
   export interface ReqQueryParams extends ReqPage {
     relationType?: string;
     memberId?: number;
+    novelId?: number;
     familyId?: number;
     status?: string;
   }
@@ -464,6 +477,7 @@ export namespace NovelRelation {
   export interface ResRelation {
     id: number;
     sourceType: string;
+    novelId: number;
     sourceId: number;
     sourceName: string;
     sourceSub: string;
@@ -508,5 +522,35 @@ export namespace NovelRelation {
   export interface ResGraph {
     nodes: GraphNode[];
     edges: GraphEdge[];
+  }
+}
+
+// 小说模块
+export namespace Novel {
+  // 查询参数
+  export interface ReqQueryParams extends ReqPage {
+    keyword?: string;
+    status?: string;
+  }
+  // 列表项（含家族数）
+  export interface ResNovelList {
+    id: number;
+    name: string;
+    alias: string;
+    author: string;
+    introduction: string;
+    status: string;
+    sort: number;
+    familyCount: number;
+    updatedAt: string;
+  }
+  // 新增/编辑参数
+  export interface ReqSaveNovel {
+    name?: string;
+    alias?: string;
+    author?: string;
+    introduction?: string;
+    status?: string;
+    sort?: number;
   }
 }

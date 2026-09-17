@@ -17,6 +17,9 @@
       <el-select v-model="searchState.status" class="filter-bar__select" placeholder="全部地位" clearable @change="handleSearch">
         <el-option v-for="item in familyStatusDict" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
+      <el-select v-model="searchState.novelId" class="filter-bar__select" placeholder="全部小说" clearable @change="handleSearch">
+        <el-option v-for="item in novelOptions" :key="item.id" :label="item.name" :value="item.id" />
+      </el-select>
       <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
       <el-button type="primary" plain :icon="Plus" @click="openCreate">新增家族</el-button>
     </div>
@@ -39,6 +42,12 @@
               <div v-if="row.alias" class="family-cell__alias">{{ row.alias }}</div>
             </div>
           </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="所属小说" width="110" align="center">
+        <template #default="{ row }">
+          <el-tag v-if="row.novelName" size="small" effect="plain">{{ row.novelName }}</el-tag>
+          <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="类型" width="90" align="center">
@@ -100,7 +109,8 @@ import { onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import { deleteFamilyApi, getFamilyListApi } from "@/api/modules/novelFamily";
-import { NovelFamily } from "@/api/interface";
+import { getNovelAllApi } from "@/api/modules/novel";
+import { Novel, NovelFamily } from "@/api/interface";
 import { getDictLabel, getDictTagType, useDict } from "@/hooks/useDict";
 import { formatTime } from "@/utils/format";
 import DetailDrawer from "@/views/novelFamily/family/DetailDrawer.vue";
@@ -115,7 +125,8 @@ const { novel_family_type: familyTypeDict, novel_family_status: familyStatusDict
 
 const loading = ref(false);
 const familyList = ref<NovelFamily.ResFamilyList[]>([]);
-const searchState = reactive({ keyword: "", type: "", status: "" });
+const novelOptions = ref<Novel.ResNovelList[]>([]);
+const searchState = reactive({ keyword: "", type: "", status: "", novelId: undefined as number | undefined });
 const pageable = reactive({ pageNum: 1, pageSize: 10, total: 0 });
 
 const editVisible = ref(false);
@@ -131,7 +142,8 @@ const fetchList = async () => {
       pageSize: pageable.pageSize,
       keyword: searchState.keyword || undefined,
       type: searchState.type || undefined,
-      status: searchState.status || undefined
+      status: searchState.status || undefined,
+      novelId: searchState.novelId || undefined
     });
     familyList.value = data.list || [];
     pageable.total = data.total || 0;
@@ -189,8 +201,18 @@ const syncFromRoute = () => {
   }
 };
 
+const loadNovelOptions = async () => {
+  try {
+    const { data } = await getNovelAllApi();
+    novelOptions.value = data || [];
+  } catch {
+    novelOptions.value = [];
+  }
+};
+
 onMounted(() => {
   fetchList();
+  loadNovelOptions();
   syncFromRoute();
 });
 </script>

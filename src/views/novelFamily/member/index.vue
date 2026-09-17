@@ -12,6 +12,15 @@
         @clear="handleSearch"
       />
       <el-select
+        v-model="searchState.novelId"
+        class="filter-bar__select"
+        placeholder="全部小说"
+        clearable
+        @change="handleNovelChange"
+      >
+        <el-option v-for="item in novelOptions" :key="item.id" :label="item.name" :value="item.id" />
+      </el-select>
+      <el-select
         v-model="searchState.familyId"
         class="filter-bar__select"
         placeholder="全部家族"
@@ -43,6 +52,12 @@
             <span class="member-cell__name">{{ row.name }}</span>
             <span v-if="row.alias" class="member-cell__alias">{{ row.alias }}</span>
           </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="所属小说" width="110" align="center">
+        <template #default="{ row }">
+          <el-tag v-if="row.novelName" size="small" effect="plain">{{ row.novelName }}</el-tag>
+          <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column prop="familyName" label="所属家族" min-width="130" show-overflow-tooltip>
@@ -113,8 +128,9 @@ import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { getFamilyListApi } from "@/api/modules/novelFamily";
+import { getNovelAllApi } from "@/api/modules/novel";
 import { deleteMemberApi, getMemberListApi } from "@/api/modules/novelMember";
-import { NovelFamily, NovelMember } from "@/api/interface";
+import { Novel, NovelFamily, NovelMember } from "@/api/interface";
 import { getDictLabel, getDictTagType, useDict } from "@/hooks/useDict";
 import { formatTime } from "@/utils/format";
 import DetailDrawer from "@/views/novelFamily/member/DetailDrawer.vue";
@@ -128,9 +144,11 @@ const { novel_member_role: memberRoleDict } = useDict("novel_member_role");
 const loading = ref(false);
 const memberList = ref<NovelMember.ResMemberList[]>([]);
 const familyOptions = ref<NovelFamily.ResFamilyList[]>([]);
+const novelOptions = ref<Novel.ResNovelList[]>([]);
 
 const searchState = reactive({
   keyword: "",
+  novelId: undefined as number | undefined,
   familyId: undefined as number | undefined,
   roleType: "",
   coreOnly: false
@@ -149,6 +167,7 @@ const fetchList = async () => {
       pageNum: pageable.pageNum,
       pageSize: pageable.pageSize,
       keyword: searchState.keyword || undefined,
+      novelId: searchState.novelId,
       familyId: searchState.familyId,
       roleType: searchState.roleType || undefined,
       isCore: searchState.coreOnly ? 1 : undefined
@@ -166,8 +185,28 @@ const handleSearch = () => {
 };
 
 const loadFamilyOptions = async () => {
-  const { data } = await getFamilyListApi({ pageNum: 1, pageSize: 200 });
+  const { data } = await getFamilyListApi({
+    pageNum: 1,
+    pageSize: 200,
+    novelId: searchState.novelId || undefined
+  });
   familyOptions.value = data.list || [];
+};
+
+const loadNovelOptions = async () => {
+  try {
+    const { data } = await getNovelAllApi();
+    novelOptions.value = data || [];
+  } catch {
+    novelOptions.value = [];
+  }
+};
+
+const handleNovelChange = () => {
+  // 切换小说后重置家族筛选，并按小说刷新家族下拉
+  searchState.familyId = undefined;
+  loadFamilyOptions();
+  handleSearch();
 };
 
 const syncFromRoute = () => {
@@ -220,6 +259,7 @@ const handleSaved = () => {
 };
 
 onMounted(() => {
+  loadNovelOptions();
   loadFamilyOptions();
   syncFromRoute();
 });
