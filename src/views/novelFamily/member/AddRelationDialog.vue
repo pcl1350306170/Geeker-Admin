@@ -12,7 +12,7 @@
           clearable
           :remote-method="searchMembers"
           :loading="memberLoading"
-          placeholder="输入姓名搜索成员（可跨家族）"
+          placeholder="输入姓名搜索成员（同一部小说，可跨家族）"
           style="width: 100%"
         >
           <el-option
@@ -61,7 +61,7 @@ import { addRelationApi } from "@/api/modules/novelRelation";
 import { NovelMember, NovelRelation } from "@/api/interface";
 import { useDict } from "@/hooks/useDict";
 
-const props = defineProps<{ visible: boolean; sourceMemberId: number }>();
+const props = defineProps<{ visible: boolean; sourceMemberId: number; novelId?: number }>();
 const emit = defineEmits<{ "update:visible": [value: boolean]; saved: [] }>();
 
 const { novel_relation_type: relationTypeDict } = useDict("novel_relation_type");
@@ -118,7 +118,7 @@ const searchMembers = async (keyword: string) => {
   }
   memberLoading.value = true;
   try {
-    const { data } = await getMemberListApi({ pageNum: 1, pageSize: 20, keyword });
+    const { data } = await getMemberListApi({ pageNum: 1, pageSize: 20, keyword, novelId: props.novelId });
     memberOptions.value = (data.list || []).filter(m => m.id !== props.sourceMemberId);
   } finally {
     memberLoading.value = false;

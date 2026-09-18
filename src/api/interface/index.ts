@@ -279,6 +279,37 @@ export namespace Department {
   export type ReqSaveDepartment = Partial<ResDepartmentList>;
 }
 
+// 系统日志模块
+export namespace Log {
+  // 查询参数
+  export interface ReqLogParams extends ReqPage {
+    logType?: number | "";
+    businessType?: string;
+    operator?: string;
+    status?: number | "";
+    beginTime?: string;
+    endTime?: string;
+  }
+  // 日志信息（与后端 sys_log 对应）
+  export interface ResLogList {
+    id: number;
+    logType: number;
+    title: string;
+    businessType: string;
+    method: string;
+    requestMethod: string;
+    requestUrl: string;
+    requestParam: string;
+    responseResult: string;
+    operator: string;
+    operatorIp: string;
+    status: number;
+    errorMsg: string;
+    costTime: number;
+    createTime: string;
+  }
+}
+
 // 字典管理模块
 export namespace Dict {
   // 字典类型查询参数

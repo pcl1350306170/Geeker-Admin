@@ -6,7 +6,7 @@
         <el-radio-button value="families">家族总览</el-radio-button>
         <el-radio-button value="members">成员关系</el-radio-button>
       </el-radio-group>
-      <el-select v-model="selectedNovelId" class="toolbar__novel" placeholder="全部小说" clearable @change="handleNovelChange">
+      <el-select v-model="selectedNovelId" class="toolbar__novel" placeholder="选择小说" @change="handleNovelChange">
         <el-option v-for="item in novelOptions" :key="item.id" :label="item.name" :value="item.id" />
       </el-select>
       <el-select
@@ -67,6 +67,7 @@
         v-if="selectedMember"
         v-model:visible="relationCreateVisible"
         :source-member-id="getMemberNumId(selectedMember.id)"
+        :novel-id="selectedNovelId"
         @saved="loadMemberGraph"
       />
     </div>
@@ -84,6 +85,7 @@ import { getNovelAllApi } from "@/api/modules/novel";
 import { deleteRelationApi, getFamilyGraphApi, getMemberGraphApi } from "@/api/modules/novelRelation";
 import { Novel, NovelFamily, NovelRelation } from "@/api/interface";
 import { getDictLabel, useDict } from "@/hooks/useDict";
+import { useGlobalStore } from "@/stores/modules/global";
 import AddRelationDialog from "@/views/novelFamily/member/AddRelationDialog.vue";
 
 const {
@@ -92,6 +94,9 @@ const {
   novel_member_role: memberRoleDict,
   novel_relation_type: relationTypeDict
 } = useDict("novel_family_type", "novel_family_status", "novel_member_role", "novel_relation_type");
+
+const globalStore = useGlobalStore();
+const isDark = computed(() => globalStore.isDark);
 
 const scope = ref<"families" | "members">("families");
 const loading = ref(false);
@@ -168,6 +173,10 @@ const loadNovelOptions = async () => {
   try {
     const { data } = await getNovelAllApi();
     novelOptions.value = data || [];
+    // 默认选中第一部小说，图谱始终限定在同一部小说内
+    if (novelOptions.value.length && !selectedNovelId.value) {
+      selectedNovelId.value = novelOptions.value[0].id;
+    }
   } catch {
     novelOptions.value = [];
   }
@@ -332,6 +341,9 @@ const buildOption = (): echarts.EChartsOption => {
 
   return {
     tooltip: {
+      backgroundColor: isDark.value ? "rgba(29,33,41,0.92)" : "rgba(255,255,255,0.92)",
+      borderColor: isDark.value ? "#4e5969" : "#e5e6eb",
+      textStyle: { color: isDark.value ? "#e5e6eb" : "#1f2329" },
       formatter: (params: any) => {
         if (params.dataType === "edge") {
           return `${params.data.sourceName || ""} —${relationLabel(params.data.relationType)}— ${params.data.targetName || ""}`;
@@ -355,7 +367,7 @@ const buildOption = (): echarts.EChartsOption => {
       data: categories,
       top: 6,
       type: "scroll",
-      textStyle: { fontSize: 12 }
+      textStyle: { fontSize: 12, color: isDark.value ? "#c9cdd4" : "#1f2329" }
     },
     series: [
       {
@@ -392,7 +404,12 @@ const buildOption = (): echarts.EChartsOption => {
             relationType: e.relationType,
             sourceName: srcNode?.name || "",
             targetName: tgtNode?.name || "",
-            label: { show: true, formatter: relationLabel(e.relationType), fontSize: 10, color: "#86909c" },
+            label: {
+              show: true,
+              formatter: relationLabel(e.relationType),
+              fontSize: 10,
+              color: isDark.value ? "#a9aeb8" : "#86909c"
+            },
             lineStyle: isFamilies ? undefined : { curveness: sameRow ? 0.3 : 0.04 }
           };
         }),
@@ -402,7 +419,7 @@ const buildOption = (): echarts.EChartsOption => {
           show: true,
           position: isFamilies ? "right" : "bottom",
           fontSize: 12,
-          color: "#1f2329",
+          color: isDark.value ? "#e5e6eb" : "#1f2329",
           formatter: (p: any) => p.name
         },
         lineStyle: { color: "source", curveness: 0.12, width: 1.5, opacity: 0.7 },
@@ -443,10 +460,16 @@ watch([nodes, edges], () => {
   nextTick(renderChart);
 });
 
+// 主题切换（暗黑/亮色）时按新配色重绘 ECharts
+watch(isDark, () => {
+  nextTick(renderChart);
+});
+
 onMounted(() => {
-  loadNovelOptions();
-  loadFamilyOptions();
-  loadFamilyGraph();
+  loadNovelOptions().then(() => {
+    loadFamilyOptions();
+    loadFamilyGraph();
+  });
   window.addEventListener("resize", handleResize);
 });
 
@@ -478,7 +501,7 @@ onBeforeUnmount(() => {
 }
 .toolbar__hint {
   font-size: 12px;
-  color: #86909c;
+  color: var(--el-text-color-secondary);
 }
 .graph-body {
   position: relative;
@@ -487,8 +510,8 @@ onBeforeUnmount(() => {
   justify-content: center;
   height: calc(100vh - 220px);
   min-height: 420px;
-  background: #fafbfc;
-  border: 1px solid #f0f1f2;
+  background: var(--el-fill-color-lighter);
+  border: 1px solid var(--el-border-color-lighter);
   border-radius: 10px;
 }
 .graph-body__chart {
@@ -505,8 +528,8 @@ onBeforeUnmount(() => {
   flex-direction: column;
   width: 280px;
   overflow: hidden;
-  background: #ffffff;
-  border: 1px solid #e5e6eb;
+  background: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color);
   border-radius: 8px;
   box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
 }
@@ -515,12 +538,12 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  border-bottom: 1px solid #f0f1f2;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 .member-panel__name {
   font-size: 15px;
   font-weight: 600;
-  color: #1f2329;
+  color: var(--el-text-color-primary);
 }
 .member-panel__actions {
   display: flex;
@@ -531,24 +554,24 @@ onBeforeUnmount(() => {
   padding: 0 2px;
   font-size: 18px;
   line-height: 1;
-  color: #86909c;
+  color: var(--el-text-color-secondary);
   cursor: pointer;
 }
 .member-panel__close:hover {
-  color: #1f2329;
+  color: var(--el-text-color-primary);
 }
 .member-panel__meta {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   padding: 10px 14px;
-  border-bottom: 1px solid #f0f1f2;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 .member-panel__tag {
   padding: 2px 8px;
   font-size: 12px;
-  color: #4e5969;
-  background: #f2f3f5;
+  color: var(--el-text-color-regular);
+  background: var(--el-fill-color-light);
   border-radius: 4px;
 }
 .member-panel__list {
@@ -566,7 +589,7 @@ onBeforeUnmount(() => {
   transition: background 0.2s;
 }
 .member-panel__item:hover {
-  background: #f2f3f5;
+  background: var(--el-fill-color-light);
 }
 .member-panel__info {
   display: flex;
@@ -577,14 +600,14 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   margin-right: 8px;
   font-size: 12px;
-  color: #4e5969;
+  color: var(--el-text-color-regular);
 }
 .member-panel__other {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 13px;
   font-weight: 500;
-  color: #1f2329;
+  color: var(--el-text-color-primary);
   white-space: nowrap;
 }
 .member-panel__del {
@@ -598,7 +621,7 @@ onBeforeUnmount(() => {
 .member-panel__empty {
   padding: 24px 0;
   font-size: 12px;
-  color: #86909c;
+  color: var(--el-text-color-secondary);
   text-align: center;
 }
 </style>

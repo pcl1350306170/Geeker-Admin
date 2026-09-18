@@ -253,11 +253,11 @@ onMounted(fetchList);
 }
 .novel-cell__title {
   font-weight: 600;
-  color: #1f2329;
+  color: var(--el-text-color-primary);
 }
 .novel-cell__alias {
   font-size: 12px;
-  color: #86909c;
+  color: var(--el-text-color-secondary);
 }
 .table-footer {
   display: flex;

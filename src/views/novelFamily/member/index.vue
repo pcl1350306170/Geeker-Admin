@@ -11,13 +11,7 @@
         @keyup.enter="handleSearch"
         @clear="handleSearch"
       />
-      <el-select
-        v-model="searchState.novelId"
-        class="filter-bar__select"
-        placeholder="全部小说"
-        clearable
-        @change="handleNovelChange"
-      >
+      <el-select v-model="searchState.novelId" class="filter-bar__select" placeholder="选择小说" @change="handleNovelChange">
         <el-option v-for="item in novelOptions" :key="item.id" :label="item.name" :value="item.id" />
       </el-select>
       <el-select
@@ -197,9 +191,20 @@ const loadNovelOptions = async () => {
   try {
     const { data } = await getNovelAllApi();
     novelOptions.value = data || [];
+    // 默认选中第一部小说，保证列表始终限定在同一部小说内
+    if (novelOptions.value.length && !searchState.novelId) {
+      searchState.novelId = novelOptions.value[0].id;
+    }
   } catch {
     novelOptions.value = [];
   }
+};
+
+const initData = async () => {
+  await loadNovelOptions();
+  await loadFamilyOptions();
+  syncFromRoute();
+  handleSearch();
 };
 
 const handleNovelChange = () => {
@@ -259,9 +264,7 @@ const handleSaved = () => {
 };
 
 onMounted(() => {
-  loadNovelOptions();
-  loadFamilyOptions();
-  syncFromRoute();
+  initData();
 });
 </script>
 
@@ -284,12 +287,12 @@ onMounted(() => {
 }
 .member-cell__name {
   font-weight: 600;
-  color: #1f2329;
+  color: var(--el-text-color-primary);
 }
 .member-cell__alias {
   margin-left: 4px;
   font-size: 12px;
-  color: #86909c;
+  color: var(--el-text-color-secondary);
 }
 .table-footer {
   display: flex;

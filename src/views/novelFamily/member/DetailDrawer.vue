@@ -96,7 +96,12 @@
     </div>
 
     <!-- 成员关系添加弹窗 -->
-    <AddRelationDialog v-model:visible="relationCreateVisible" :source-member-id="props.memberId" @saved="loadRelations" />
+    <AddRelationDialog
+      v-model:visible="relationCreateVisible"
+      :source-member-id="props.memberId"
+      :novel-id="detail?.novelId"
+      @saved="loadRelations"
+    />
   </el-drawer>
 </template>
 
@@ -180,22 +185,22 @@ const handleRelationDelete = (row: NovelRelation.ResRelation) => {
   gap: 14px;
   padding-bottom: 12px;
   margin-bottom: 8px;
-  border-bottom: 1px solid #f0f1f2;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 .overview-avatar {
   flex-shrink: 0;
   font-size: 26px;
-  background: #3370ff;
+  background: var(--el-color-primary);
 }
 .overview-name {
   font-size: 18px;
   font-weight: 700;
-  color: #1f2329;
+  color: var(--el-text-color-primary);
 }
 .overview-alias {
   font-size: 13px;
   font-weight: 400;
-  color: #86909c;
+  color: var(--el-text-color-secondary);
 }
 .overview-tags {
   display: flex;
@@ -210,15 +215,15 @@ const handleRelationDelete = (row: NovelRelation.ResRelation) => {
   margin-bottom: 6px;
   font-size: 14px;
   font-weight: 600;
-  color: #1f2329;
+  color: var(--el-text-color-primary);
 }
 .block__content {
   padding: 12px;
   font-size: 13px;
   line-height: 1.8;
-  color: #4e5969;
+  color: var(--el-text-color-regular);
   white-space: pre-wrap;
-  background: #f7f8fa;
+  background: var(--el-fill-color-lighter);
   border-radius: 8px;
 }
 .block__tag {
@@ -232,7 +237,7 @@ const handleRelationDelete = (row: NovelRelation.ResRelation) => {
 }
 .tab-toolbar__hint {
   font-size: 13px;
-  color: #86909c;
+  color: var(--el-text-color-secondary);
 }
 .relation-cell {
   display: flex;
@@ -244,6 +249,6 @@ const handleRelationDelete = (row: NovelRelation.ResRelation) => {
 }
 .relation-cell__name.is-self {
   font-weight: 600;
-  color: #3370ff;
+  color: var(--el-color-primary);
 }
 </style>

@@ -12,7 +12,7 @@
           clearable
           :remote-method="searchFamilies"
           :loading="familyLoading"
-          placeholder="输入名称搜索家族"
+          placeholder="输入名称搜索家族（同一部小说）"
           style="width: 100%"
         >
           <el-option
@@ -55,7 +55,7 @@ import { addRelationApi } from "@/api/modules/novelRelation";
 import { NovelFamily, NovelRelation } from "@/api/interface";
 import { useDict } from "@/hooks/useDict";
 
-const props = defineProps<{ visible: boolean; sourceFamilyId: number }>();
+const props = defineProps<{ visible: boolean; sourceFamilyId: number; novelId?: number }>();
 const emit = defineEmits<{ "update:visible": [value: boolean]; saved: [] }>();
 
 const { novel_relation_type: relationTypeDict } = useDict("novel_relation_type");
@@ -113,7 +113,7 @@ const searchFamilies = async (keyword: string) => {
   }
   familyLoading.value = true;
   try {
-    const { data } = await getFamilyListApi({ pageNum: 1, pageSize: 20, keyword });
+    const { data } = await getFamilyListApi({ pageNum: 1, pageSize: 20, keyword, novelId: props.novelId });
     familyOptions.value = (data.list || []).filter(f => f.id !== props.sourceFamilyId);
   } finally {
     familyLoading.value = false;

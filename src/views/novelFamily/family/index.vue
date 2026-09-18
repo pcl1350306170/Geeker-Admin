@@ -17,7 +17,7 @@
       <el-select v-model="searchState.status" class="filter-bar__select" placeholder="全部地位" clearable @change="handleSearch">
         <el-option v-for="item in familyStatusDict" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
-      <el-select v-model="searchState.novelId" class="filter-bar__select" placeholder="全部小说" clearable @change="handleSearch">
+      <el-select v-model="searchState.novelId" class="filter-bar__select" placeholder="选择小说" @change="handleSearch">
         <el-option v-for="item in novelOptions" :key="item.id" :label="item.name" :value="item.id" />
       </el-select>
       <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
@@ -205,15 +205,23 @@ const loadNovelOptions = async () => {
   try {
     const { data } = await getNovelAllApi();
     novelOptions.value = data || [];
+    // 默认选中第一部小说，保证列表始终限定在同一部小说内
+    if (novelOptions.value.length && !searchState.novelId) {
+      searchState.novelId = novelOptions.value[0].id;
+    }
   } catch {
     novelOptions.value = [];
   }
 };
 
-onMounted(() => {
-  fetchList();
-  loadNovelOptions();
+const initData = async () => {
+  await loadNovelOptions();
   syncFromRoute();
+  fetchList();
+};
+
+onMounted(() => {
+  initData();
 });
 </script>
 
@@ -242,16 +250,16 @@ onMounted(() => {
   flex-shrink: 0;
   width: 36px;
   height: 36px;
-  background: #f2f3f5;
+  background: var(--el-fill-color-light);
   border-radius: 6px;
 }
 .family-cell__title {
   font-weight: 600;
-  color: #1f2329;
+  color: var(--el-text-color-primary);
 }
 .family-cell__alias {
   font-size: 12px;
-  color: #86909c;
+  color: var(--el-text-color-secondary);
 }
 .table-footer {
   display: flex;
