@@ -20,11 +20,30 @@
       >
         <el-option v-for="item in familyOptions" :key="item.id" :label="item.name" :value="item.id" />
       </el-select>
+      <el-checkbox-group
+        v-if="scope === 'members'"
+        v-model="edgeTypeFilter"
+        class="toolbar__filter"
+        size="small"
+        @change="handleEdgeTypeChange"
+      >
+        <el-checkbox-button value="FAMILY">血缘婚姻</el-checkbox-button>
+        <el-checkbox-button value="EMOTION">情感</el-checkbox-button>
+        <el-checkbox-button value="OTHER">其他</el-checkbox-button>
+      </el-checkbox-group>
+      <el-button
+        v-if="scope === 'members' && expandedGroups.size > 0"
+        class="toolbar__collapse"
+        size="small"
+        @click="collapseAllGroups"
+      >
+        收起分组
+      </el-button>
       <span class="toolbar__hint">
         {{
           scope === "families"
             ? "节点=家族，连线=家族间关系；支持拖拽、缩放"
-            : "成员按辈分从上到下分层展示，同辈横向排开；点击人物可查看并编辑其关系，支持拖拽、缩放"
+            : "成员按辈分分层展示；可勾选血缘/情感/其他关系类型，高扇出关系默认聚合为分组节点（点击展开），支持拖拽、缩放"
         }}
       </span>
     </div>
@@ -111,6 +130,49 @@ const selectedMember = ref<NovelRelation.GraphNode>();
 const relationCreateVisible = ref(false);
 
 let chartInstance: echarts.ECharts | null = null;
+
+// ---------- 关系显示：类型过滤 + 高扇出聚合 ----------
+type RelationCategory = "FAMILY" | "EMOTION" | "OTHER";
+type GroupGraphNode = NovelRelation.GraphNode & {
+  isGroup?: boolean;
+  sourceMemberId?: number;
+  relationType?: string;
+  groupMembers?: string[];
+};
+type DisplayEdge = NovelRelation.GraphEdge & { isGroupEdge?: boolean };
+
+const RELATION_CATEGORY: Record<string, RelationCategory> = {
+  FATHER_SON: "FAMILY",
+  MOTHER_SON: "FAMILY",
+  FATHER_DAUGHTER: "FAMILY",
+  MOTHER_DAUGHTER: "FAMILY",
+  BROTHERS: "FAMILY",
+  SISTERS: "FAMILY",
+  BROTHER_SISTER: "FAMILY",
+  SISTER_BROTHER: "FAMILY",
+  GRANDPARENT: "FAMILY",
+  UNCLE_NEPHEW: "FAMILY",
+  COUSIN_PATERNAL: "FAMILY",
+  COUSIN_MATERNAL: "FAMILY",
+  SPOUSE: "FAMILY",
+  MARRIAGE_ALLIANCE: "FAMILY",
+  LOVER: "EMOTION",
+  ENGAGED: "EMOTION",
+  EX_SPOUSE: "EMOTION",
+  CLOSE_FRIEND: "EMOTION",
+  BENEFACTOR: "EMOTION",
+  MASTER_APPRENTICE: "OTHER",
+  FELLOW: "OTHER",
+  MASTER_SERVANT: "OTHER",
+  SOVEREIGN_MINISTER: "OTHER",
+  ALLY: "OTHER",
+  ENEMY: "OTHER",
+  DEPENDENT: "OTHER",
+  SWORN_ENEMY: "OTHER"
+};
+const edgeTypeFilter = ref<RelationCategory[]>(["FAMILY"]);
+const expandedGroups = ref<Set<string>>(new Set());
+const GROUP_THRESHOLD = 5;
 const colorPalette = ["#3370ff", "#00b42a", "#ff7d00", "#f53f3f", "#722ed1", "#13c2c2", "#eb2f96", "#faad14", "#8c8c8c"];
 
 const emptyText = computed(() => {
@@ -224,6 +286,71 @@ const loadMemberGraph = async () => {
   }
 };
 
+// 构建显示图：按关系类型过滤边，并把高扇出关系（同一人物+同一类型+对方仅连此人）聚合为分组节点
+const buildDisplayGraph = (): { nodes: GroupGraphNode[]; edges: DisplayEdge[] } => {
+  if (scope.value === "families") {
+    return { nodes: nodes.value as GroupGraphNode[], edges: edges.value };
+  }
+  const visibleEdges = edges.value.filter(e => edgeTypeFilter.value.includes(RELATION_CATEGORY[e.relationType] ?? "OTHER"));
+  const degree = new Map<string, number>();
+  visibleEdges.forEach(e => {
+    degree.set(e.source, (degree.get(e.source) ?? 0) + 1);
+    degree.set(e.target, (degree.get(e.target) ?? 0) + 1);
+  });
+  const grouped = new Set<string>();
+  const groupNodes: GroupGraphNode[] = [];
+  const groupEdges: DisplayEdge[] = [];
+  const scanned = new Set<string>();
+  visibleEdges.forEach(e => {
+    const sk = `${e.source}|${e.relationType}`;
+    if (scanned.has(sk)) return;
+    scanned.add(sk);
+    const same = visibleEdges.filter(x => x.source === e.source && x.relationType === e.relationType);
+    if (same.length < GROUP_THRESHOLD) return;
+    if (grouped.has(e.source)) return;
+    const pure = same.map(x => x.target).filter(t => (degree.get(t) ?? 0) === 1 && !grouped.has(t));
+    if (pure.length < GROUP_THRESHOLD) return;
+    const gid = `G:${e.source}:${e.relationType}`;
+    if (expandedGroups.value.has(gid)) return;
+    const srcNode = nodes.value.find(n => n.id === e.source);
+    const label = relationLabel(e.relationType);
+    pure.forEach(t => grouped.add(t));
+    groupNodes.push({
+      id: gid,
+      name: `${label} ${pure.length}人`,
+      category: "",
+      familyId: srcNode?.familyId ?? 0,
+      type: "",
+      isHead: 0,
+      sub: "点击展开",
+      generation: srcNode?.generation,
+      isGroup: true,
+      sourceMemberId: Number(e.source.replace(/^\D+/, "")),
+      relationType: e.relationType,
+      groupMembers: pure
+    });
+    groupEdges.push({
+      source: e.source,
+      target: gid,
+      relationType: e.relationType,
+      description: `聚合 ${pure.length} 条${label}关系`,
+      isGroupEdge: true
+    });
+  });
+  const keptEdges = visibleEdges.filter(x => !grouped.has(x.target) && !grouped.has(x.source));
+  const keptNodes = nodes.value.filter(n => !grouped.has(n.id));
+  return { nodes: [...keptNodes, ...groupNodes] as GroupGraphNode[], edges: [...keptEdges, ...groupEdges] };
+};
+
+const handleEdgeTypeChange = () => {
+  nextTick(renderChart);
+};
+
+const collapseAllGroups = () => {
+  expandedGroups.value = new Set();
+  nextTick(renderChart);
+};
+
 const handleScopeChange = () => {
   selectedMember.value = undefined;
   if (scope.value === "families") {
@@ -312,7 +439,17 @@ const handleRelationDelete = (r: { relationId?: number; relationLabel: string; o
 
 const onChartClick = (params: any) => {
   if (scope.value !== "members" || params.dataType !== "node") return;
-  const node = nodes.value.find(n => n.id === params.data?.id);
+  const data = params.data;
+  if (data?.isGroup) {
+    // 点击分组节点：展开该分组（恢复成员与关系）
+    const gid = data.id as string;
+    if (!expandedGroups.value.has(gid)) {
+      expandedGroups.value = new Set(expandedGroups.value).add(gid);
+      nextTick(renderChart);
+    }
+    return;
+  }
+  const node = nodes.value.find(n => n.id === data?.id);
   if (node) {
     selectedMember.value = node;
     focusMember(node.id);
@@ -325,10 +462,11 @@ const buildOption = (): echarts.EChartsOption => {
   const width = chartRef.value?.clientWidth || 1200;
   const height = chartRef.value?.clientHeight || 700;
   // 成员关系图：按辈分计算阶梯坐标；家族总览图保持力导向布局
-  const pos = isFamilies ? null : buildGenerationLayout(nodes.value, width, height);
+  const { nodes: displayNodes, edges: displayEdges } = buildDisplayGraph();
+  const pos = isFamilies ? null : buildGenerationLayout(displayNodes, width, height);
 
   const categoryMap = new Map<string, string>();
-  nodes.value.forEach(n => {
+  displayNodes.forEach(n => {
     const type = n.type || "";
     if (!categoryMap.has(type)) {
       categoryMap.set(
@@ -349,9 +487,14 @@ const buildOption = (): echarts.EChartsOption => {
           return `${params.data.sourceName || ""} —${relationLabel(params.data.relationType)}— ${params.data.targetName || ""}`;
         }
         const n = params.data;
+        const lines = [`<b>${n.name}</b>`];
+        if (n.isGroup) {
+          if (n.sub) lines.push(n.sub);
+          lines.push(`包含 ${(n.groupMembers || []).length} 位成员，点击展开`);
+          return lines.join("<br/>");
+        }
         const typeLabel = isFamilies ? getDictLabel(familyTypeDict.value, n.type) : getDictLabel(memberRoleDict.value, n.type);
         const statusLabel = isFamilies ? getDictLabel(familyStatusDict.value, n.type) : "";
-        const lines = [`<b>${n.name}</b>`];
         if (n.sub) lines.push(n.sub);
         if (!isFamilies) {
           const gl = genLabel(n.generation);
@@ -375,29 +518,34 @@ const buildOption = (): echarts.EChartsOption => {
         layout: isFamilies ? "force" : "none",
         roam: true,
         draggable: true,
-        data: nodes.value.map(n => {
+        data: displayNodes.map(n => {
           const categoryIndex = [...categoryMap.keys()].indexOf(n.type || "");
           const isHead = n.isHead === 1;
+          const isGroup = !!n.isGroup;
           const p = pos?.get(n.id);
           return {
             id: n.id,
             name: n.name,
             category: categoryMap.get(n.type || "") || "未分类",
             sourceName: n.name,
-            symbolSize: isFamilies ? (isHead ? 62 : 52) : isHead ? 54 : 42,
+            symbolSize: isFamilies ? (isHead ? 62 : 52) : isGroup ? 50 : isHead ? 54 : 42,
             x: p?.[0],
             y: p?.[1],
             itemStyle: {
-              color: colorPalette[categoryIndex % colorPalette.length],
-              borderColor: isHead ? "#f53f3f" : "#fff",
-              borderWidth: isHead ? 3 : 1
-            }
+              color: isGroup ? "#8a919f" : colorPalette[categoryIndex % colorPalette.length],
+              borderColor: isHead ? "#f53f3f" : isGroup ? "#c9cdd4" : "#fff",
+              borderWidth: isHead ? 3 : isGroup ? 2 : 1,
+              borderType: isGroup ? "dashed" : "solid"
+            },
+            isGroup,
+            ...(isGroup ? { sourceMemberId: n.sourceMemberId, relationType: n.relationType, groupMembers: n.groupMembers } : {})
           };
         }),
-        links: edges.value.map(e => {
-          const srcNode = nodes.value.find(n => n.id === e.source);
-          const tgtNode = nodes.value.find(n => n.id === e.target);
+        links: displayEdges.map(e => {
+          const srcNode = displayNodes.find(n => n.id === e.source);
+          const tgtNode = displayNodes.find(n => n.id === e.target);
           const sameRow = pos ? pos.get(e.source)?.[1] === pos.get(e.target)?.[1] : false;
+          const isGroupEdge = !!e.isGroupEdge;
           return {
             source: e.source,
             target: e.target,
@@ -410,7 +558,9 @@ const buildOption = (): echarts.EChartsOption => {
               fontSize: 10,
               color: isDark.value ? "#a9aeb8" : "#86909c"
             },
-            lineStyle: isFamilies ? undefined : { curveness: sameRow ? 0.3 : 0.04 }
+            lineStyle: isFamilies
+              ? undefined
+              : { curveness: sameRow ? 0.3 : 0.04, type: isGroupEdge ? "dashed" : "solid", width: isGroupEdge ? 2 : 1.5 }
           };
         }),
         categories: categories.map((c, i) => ({ name: c, itemStyle: { color: colorPalette[i % colorPalette.length] } })),
@@ -502,6 +652,12 @@ onBeforeUnmount(() => {
 .toolbar__hint {
   font-size: 12px;
   color: var(--el-text-color-secondary);
+}
+.toolbar__filter {
+  margin-left: 2px;
+}
+.toolbar__collapse {
+  margin-left: 2px;
 }
 .graph-body {
   position: relative;

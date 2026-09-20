@@ -10,6 +10,7 @@
       <el-col :span="10">
         <ProTable
           ref="typeTable"
+          height="100%"
           :columns="typeColumns"
           :request-api="getDictTypeListApi"
           :data-callback="dataCallback"
@@ -36,6 +37,7 @@
       <el-col :span="14">
         <ProTable
           ref="dataTable"
+          height="100%"
           :columns="dataColumns"
           :request-api="getDictDataListApi"
           :data-callback="dataCallback"
@@ -326,6 +328,8 @@ const openDataDrawer = (title: string, row: Partial<Dict.ResDictData> = {}) => {
 </script>
 
 <style scoped lang="scss">
+/* 页面填满 el-main，内部采用多层 flex 链路，把可用高度传递到 el-table，
+   再依靠 ProTable 上的 height="100%" 触发 Element Plus 内部滚动（表头固定，仅表体滚动）。 */
 .dict-manage {
   display: flex;
   flex-direction: column;
@@ -333,15 +337,41 @@ const openDataDrawer = (title: string, row: Partial<Dict.ResDictData> = {}) => {
   height: 100%;
   overflow: hidden;
   .dict-alert {
+    flex-shrink: 0;
     margin-bottom: 10px;
   }
   .dict-row {
-    flex: 1;
+    flex: 1 1 0;
+    flex-wrap: nowrap;
     min-height: 0;
   }
+
+  // el-col 作为 ProTable 的直接容器，需要变成列方向 flex，并把高度传递下去
   :deep(.el-col) {
     display: flex;
     flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  // 搜索区、表格头部按钮区、分页都固定，不参与滚动
+  :deep(.table-search),
+  :deep(.table-main > .table-header),
+  :deep(.table-main > .el-pagination) {
+    flex-shrink: 0;
+  }
+
+  // 覆盖 element.scss 中 .table-main 的 height:100%，避免与 flex-basis 冲突
+  :deep(.table-main) {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  // el-table 占满 .table-main 剩余空间，配合 height="100%" prop 启用内部滚动
+  :deep(.table-main > .el-table) {
+    flex: 1 1 0;
     min-height: 0;
   }
 }
