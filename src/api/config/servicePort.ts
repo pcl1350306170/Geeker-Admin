@@ -16,3 +16,6 @@ export const NOVEL_RELATION_PORT = "/geeker/novel/relations";
 
 // 小说家族管理-小说前缀
 export const NOVEL_PORT = "/geeker/novel/novels";
+
+// 定时任务模块前缀
+export const JOB_PORT = "/geeker/job";

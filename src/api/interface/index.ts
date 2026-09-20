@@ -356,6 +356,54 @@ export namespace Dict {
   export type ReqSaveDictData = Partial<ResDictData>;
 }
 
+// 定时任务模块
+export namespace Job {
+  // 任务查询参数
+  export interface ReqJobParams extends ReqPage {
+    jobName?: string;
+    jobGroup?: string;
+    status?: number | "";
+  }
+  // 任务信息（与后端 sys_job 对应）
+  export interface ResJobList {
+    id: number;
+    jobName: string;
+    jobGroup: string;
+    invokeTarget: string;
+    cronExpression: string;
+    concurrent: number;
+    status: number;
+    remark: string;
+    createTime: string;
+    updateTime: string;
+  }
+  // 任务新增/编辑参数
+  export type ReqSaveJob = Partial<ResJobList>;
+
+  // 调度日志查询参数
+  export interface ReqJobLogParams extends ReqPage {
+    jobId?: number;
+    jobName?: string;
+    jobGroup?: string;
+    status?: number | "";
+    beginTime?: string;
+    endTime?: string;
+  }
+  // 调度日志信息（与后端 sys_job_log 对应）
+  export interface ResJobLogList {
+    id: number;
+    jobId: number;
+    jobName: string;
+    jobGroup: string;
+    invokeTarget: string;
+    jobMessage: string;
+    status: number;
+    exceptionInfo: string;
+    costTime: number;
+    createTime: string;
+  }
+}
+
 // ========== 小说家族管理 ==========
 
 export namespace NovelFamily {
