@@ -46,6 +46,27 @@ export const getGeneralDataByType = (dataType: string): Promise<GeneralData[]> =
     .get<GeneralData[], BlogResult<GeneralData[]>>(`${BASE}/get-by-type`, { params: { dataType } })
     .then(res => res.data || []);
 
+/** 分页结果（传 page+limit 时后端返回此结构） */
+export interface GeneralDataPage {
+  list: GeneralData[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+/** 分页查询入参 */
+export interface GeneralDataPageParams {
+  dataType: string;
+  /** 关键字，后端按 data_key 模糊匹配 */
+  keyword?: string;
+  page: number;
+  limit: number;
+}
+
+/** 按类型分页查询（page、limit 均 > 0 时返回 { list, total, page, limit }） */
+export const getGeneralDataPage = (params: GeneralDataPageParams): Promise<GeneralDataPage> =>
+  blogHttp.get<GeneralDataPage, BlogResult<GeneralDataPage>>(`${BASE}/get-by-type`, { params }).then(res => res.data);
+
 /** 批量检查 dataKey，返回"不存在"的 key 列表 */
 export const checkGeneralDataKeys = (dataType: string, dataKeys: string[]): Promise<string[]> =>
   blogHttp.post<string[], BlogResult<string[]>>(`${BASE}/check-keys`, { dataType, dataKeys }).then(res => res.data || []);

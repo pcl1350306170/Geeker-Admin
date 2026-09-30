@@ -95,7 +95,13 @@
     </div>
 
     <!-- 新增/编辑弹窗 -->
-    <EditDialog v-model:visible="editVisible" :family-id="editFamilyId" @saved="handleSaved" />
+    <EditDialog
+      v-model:visible="editVisible"
+      :family-id="editFamilyId"
+      :default-novel-id="searchState.novelId"
+      :default-novel-name="currentNovelName"
+      @saved="handleSaved"
+    />
 
     <!-- 详情抽屉 -->
     <DetailDrawer v-model:visible="detailVisible" :family-id="currentFamilyId" @changed="fetchList" />
@@ -105,7 +111,7 @@
 <script setup lang="ts" name="novelFamilyIndex">
 import { Plus, Search } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import { deleteFamilyApi, getFamilyListApi } from "@/api/modules/novelFamily";
@@ -133,6 +139,12 @@ const editVisible = ref(false);
 const editFamilyId = ref(0);
 const detailVisible = ref(false);
 const currentFamilyId = ref(0);
+
+// 当前筛选选中的小说名称，用于新增弹窗展示「所属小说」
+const currentNovelName = computed(() => {
+  const novel = novelOptions.value.find(item => item.id === searchState.novelId);
+  return novel?.name || "";
+});
 
 const fetchList = async () => {
   loading.value = true;

@@ -8,6 +8,13 @@
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
       <el-row :gutter="16">
+        <el-col :span="24">
+          <el-form-item label="所属小说" prop="novelId">
+            <el-tag v-if="novelNameDisplay" type="info" effect="plain">{{ novelNameDisplay }}</el-tag>
+            <span v-else>—</span>
+            <span class="novel-tip">自动同步自列表上方的“选择小说”筛选条件</span>
+          </el-form-item>
+        </el-col>
         <el-col :span="12">
           <el-form-item label="家族名称" prop="name">
             <el-input v-model="form.name" placeholder="如：琅琊王氏" maxlength="100" />
@@ -98,7 +105,7 @@ import { addFamilyApi, getFamilyDetailApi, updateFamilyApi } from "@/api/modules
 import { NovelFamily } from "@/api/interface";
 import { useDict } from "@/hooks/useDict";
 
-const props = defineProps<{ visible: boolean; familyId: number }>();
+const props = defineProps<{ visible: boolean; familyId: number; defaultNovelId?: number; defaultNovelName?: string }>();
 const emit = defineEmits<{ "update:visible": [value: boolean]; saved: [] }>();
 
 const { novel_family_type: familyTypeDict, novel_family_status: familyStatusDict } = useDict(
@@ -114,7 +121,10 @@ const visible = computed({
 
 const formRef = ref<FormInstance>();
 const saving = ref(false);
+// 弹窗展示的「所属小说」名称（新增时来自筛选条件，编辑时来自详情）
+const novelNameDisplay = ref("");
 const form = reactive<NovelFamily.ReqSaveFamily>({
+  novelId: undefined,
   name: "",
   alias: "",
   type: "",
@@ -129,6 +139,7 @@ const form = reactive<NovelFamily.ReqSaveFamily>({
 });
 
 const rules: FormRules = {
+  novelId: [{ required: true, message: "所属小说不能为空，请先在列表上方选择小说", trigger: "change" }],
   name: [{ required: true, message: "请输入家族名称", trigger: "blur" }]
 };
 
@@ -138,7 +149,9 @@ watch(
     if (!open) return;
     if (isEdit.value) {
       const { data } = await getFamilyDetailApi(props.familyId);
+      novelNameDisplay.value = data.novelName || "";
       Object.assign(form, {
+        novelId: data.novelId,
         name: data.name,
         alias: data.alias || "",
         type: data.type || "",
@@ -152,7 +165,9 @@ watch(
         sort: data.sort ?? 0
       });
     } else {
+      novelNameDisplay.value = props.defaultNovelName || "";
       Object.assign(form, {
+        novelId: props.defaultNovelId,
         name: "",
         alias: "",
         type: "",
@@ -188,3 +203,11 @@ const handleSubmit = async () => {
   }
 };
 </script>
+
+<style scoped>
+.novel-tip {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+</style>

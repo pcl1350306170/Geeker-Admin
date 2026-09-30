@@ -38,8 +38,8 @@
         <el-input
           v-model="form.description"
           type="textarea"
-          :rows="3"
-          maxlength="1000"
+          :rows="10"
+          maxlength="10000"
           placeholder="如：虽是父子，却因夺嫡反目"
         />
       </el-form-item>

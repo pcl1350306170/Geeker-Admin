@@ -89,7 +89,7 @@
         </el-col>
         <el-col :span="24">
           <el-form-item label="外貌描述">
-            <el-input v-model="form.appearance" type="textarea" :rows="2" maxlength="1000" placeholder="外貌、衣着、气质特征" />
+            <el-input v-model="form.appearance" type="textarea" :rows="10" maxlength="10000" placeholder="外貌、衣着、气质特征" />
           </el-form-item>
         </el-col>
         <el-col :span="24">
@@ -97,7 +97,7 @@
             <el-input
               v-model="form.bio"
               type="textarea"
-              :rows="5"
+              :rows="10"
               maxlength="20000"
               placeholder="人物经历、性格背景、剧情作用（支持 Markdown）"
             />
