@@ -36,6 +36,9 @@
       <el-checkbox v-model="searchState.coreOnly" @change="handleSearch">仅核心角色</el-checkbox>
       <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
       <el-button type="primary" plain :icon="Plus" @click="openCreate">新增成员</el-button>
+      <el-button type="primary" plain :icon="UploadFilled" :disabled="!searchState.novelId" @click="openImport">
+        批量导入
+      </el-button>
     </div>
 
     <!-- 表格 -->
@@ -60,7 +63,7 @@
         </template>
       </el-table-column>
       <el-table-column label="性别" width="60" align="center">
-        <template #default="{ row }">{{ row.gender || "-" }}</template>
+        <template #default="{ row }">{{ formatGender(row.gender) }}</template>
       </el-table-column>
       <el-table-column prop="generation" label="辈分" width="90" show-overflow-tooltip />
       <el-table-column prop="title" label="头衔" min-width="120" show-overflow-tooltip />
@@ -108,7 +111,21 @@
     </div>
 
     <!-- 新增/编辑弹窗 -->
-    <EditDialog v-model:visible="editVisible" :member-id="editMemberId" @saved="handleSaved" />
+    <EditDialog
+      v-model:visible="editVisible"
+      :member-id="editMemberId"
+      :default-family-id="searchState.familyId"
+      :novel-id="searchState.novelId"
+      @saved="handleSaved"
+    />
+
+    <!-- 批量导入弹窗 -->
+    <ImportDialog
+      v-model:visible="importVisible"
+      :default-family-id="searchState.familyId"
+      :novel-id="searchState.novelId"
+      @imported="handleImported"
+    />
 
     <!-- 详情抽屉 -->
     <DetailDrawer v-model:visible="detailVisible" :member-id="currentMemberId" @changed="fetchList" />
@@ -116,7 +133,7 @@
 </template>
 
 <script setup lang="ts" name="novelMemberIndex">
-import { Plus, Search } from "@element-plus/icons-vue";
+import { Plus, Search, UploadFilled } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -129,6 +146,7 @@ import { getDictLabel, getDictTagType, useDict } from "@/hooks/useDict";
 import { formatTime } from "@/utils/format";
 import DetailDrawer from "@/views/novelFamily/member/DetailDrawer.vue";
 import EditDialog from "@/views/novelFamily/member/EditDialog.vue";
+import ImportDialog from "@/views/novelFamily/member/ImportDialog.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -151,6 +169,7 @@ const pageable = reactive({ pageNum: 1, pageSize: 10, total: 0 });
 
 const editVisible = ref(false);
 const editMemberId = ref(0);
+const importVisible = ref(false);
 const detailVisible = ref(false);
 const currentMemberId = ref(0);
 
@@ -261,6 +280,21 @@ const handleDelete = (row: NovelMember.ResMemberList) => {
 const handleSaved = () => {
   fetchList();
   loadFamilyOptions();
+};
+
+const openImport = () => {
+  importVisible.value = true;
+};
+
+const handleImported = () => {
+  fetchList();
+  loadFamilyOptions();
+};
+
+const formatGender = (gender?: string) => {
+  if (gender === "M" || gender === "男") return "男";
+  if (gender === "F" || gender === "女") return "女";
+  return gender || "-";
 };
 
 onMounted(() => {

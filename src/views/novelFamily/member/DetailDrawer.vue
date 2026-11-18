@@ -31,7 +31,7 @@
         <!-- 基本信息 -->
         <el-tab-pane label="基本信息" name="base">
           <el-descriptions :column="3" border>
-            <el-descriptions-item label="性别">{{ detail.gender || "-" }}</el-descriptions-item>
+            <el-descriptions-item label="性别">{{ formatGender(detail.gender) }}</el-descriptions-item>
             <el-descriptions-item label="辈分">{{ detail.generation || "-" }}</el-descriptions-item>
             <el-descriptions-item label="年龄">{{ detail.age ?? "-" }}</el-descriptions-item>
             <el-descriptions-item label="创建人">{{ detail.createdBy || "-" }}</el-descriptions-item>
@@ -146,6 +146,12 @@ watch(
     loadRelations();
   }
 );
+
+const formatGender = (gender?: string) => {
+  if (gender === "M" || gender === "男") return "男";
+  if (gender === "F" || gender === "女") return "女";
+  return gender || "-";
+};
 
 const loadRelations = async () => {
   if (!props.memberId) return;

@@ -31,6 +31,13 @@ export const updateMemberApi = (id: number, params: NovelMember.ReqSaveMember) =
 };
 
 /**
+ * @description 批量导入成员（JSON）
+ */
+export const importMembersApi = (params: NovelMember.ReqImportMembers) => {
+  return http.post<NovelMember.ResImportResult>(NOVEL_MEMBER_PORT + "/import", params, { loading: false });
+};
+
+/**
  * @description 删除成员（级联删除其相关关系）
  */
 export const deleteMemberApi = (id: number) => {

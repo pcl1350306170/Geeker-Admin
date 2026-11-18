@@ -28,8 +28,8 @@
         <el-col :span="12">
           <el-form-item label="性别">
             <el-select v-model="form.gender" placeholder="请选择" clearable style="width: 100%">
-              <el-option label="男" value="男" />
-              <el-option label="女" value="女" />
+              <el-option label="男" value="M" />
+              <el-option label="女" value="F" />
               <el-option label="未知" value="未知" />
             </el-select>
           </el-form-item>
@@ -122,7 +122,7 @@ import { addMemberApi, getMemberDetailApi, updateMemberApi } from "@/api/modules
 import { NovelFamily, NovelMember } from "@/api/interface";
 import { useDict } from "@/hooks/useDict";
 
-const props = defineProps<{ visible: boolean; memberId: number; defaultFamilyId?: number }>();
+const props = defineProps<{ visible: boolean; memberId: number; defaultFamilyId?: number; novelId?: number }>();
 const emit = defineEmits<{ "update:visible": [value: boolean]; saved: [] }>();
 
 const { novel_member_role: memberRoleDict } = useDict("novel_member_role");
@@ -173,8 +173,19 @@ const rules: FormRules = {
   name: [{ required: true, message: "请输入成员姓名", trigger: "blur" }]
 };
 
+const normalizeGender = (value?: string) => {
+  if (!value) return "";
+  if (value === "男") return "M";
+  if (value === "女") return "F";
+  return value;
+};
+
 const loadFamilyOptions = async () => {
-  const { data } = await getFamilyListApi({ pageNum: 1, pageSize: 200 });
+  const { data } = await getFamilyListApi({
+    pageNum: 1,
+    pageSize: 200,
+    novelId: props.novelId || undefined
+  });
   familyOptions.value = data.list || [];
 };
 
@@ -189,7 +200,7 @@ watch(
         familyId: data.familyId,
         name: data.name,
         alias: data.alias || "",
-        gender: data.gender || "",
+        gender: normalizeGender(data.gender),
         generation: data.generation || "",
         title: data.title || "",
         roleType: data.roleType || "",

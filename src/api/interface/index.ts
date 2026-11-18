@@ -541,6 +541,42 @@ export namespace NovelMember {
     isCore?: number;
     sort?: number;
   }
+  // 批量导入的单个成员（宽松：字符串数字 / 布尔 / 数组或逗号分隔标签均可）
+  export interface ReqImportMemberItem {
+    familyId?: number;
+    name?: string;
+    alias?: string;
+    gender?: string;
+    generation?: string;
+    title?: string;
+    roleType?: string;
+    age?: number | string;
+    personality?: string[] | string;
+    appearance?: string;
+    bio?: string;
+    isHead?: number | boolean | string;
+    isCore?: number | boolean | string;
+    sort?: number | string;
+  }
+  // 批量导入参数
+  export interface ReqImportMembers {
+    familyId: number;
+    members: ReqImportMemberItem[];
+  }
+  // 批量导入逐条错误
+  export interface ResImportError {
+    index: number;
+    name: string;
+    message: string;
+  }
+  // 批量导入结果
+  export interface ResImportResult {
+    ok: boolean;
+    total: number;
+    successCount: number;
+    ids: number[];
+    errors: ResImportError[];
+  }
 }
 
 export namespace NovelRelation {
