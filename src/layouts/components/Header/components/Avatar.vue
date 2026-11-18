@@ -45,15 +45,19 @@ const logout = () => {
     cancelButtonText: "取消",
     type: "warning"
   }).then(async () => {
-    // 1.执行退出登录接口
-    await logoutApi();
+    // 1.执行退出登录接口（token 过期/超时等失败场景不阻塞本地退出，错误提示由响应拦截器统一处理）
+    try {
+      await logoutApi();
+      ElMessage.success("退出登录成功！");
+    } catch {
+      // 接口失败时忽略，继续执行本地退出流程
+    } finally {
+      // 2.清除 Token
+      userStore.setToken("");
 
-    // 2.清除 Token
-    userStore.setToken("");
-
-    // 3.重定向到登陆页
-    router.replace(LOGIN_URL);
-    ElMessage.success("退出登录成功！");
+      // 3.重定向到登陆页
+      router.replace(LOGIN_URL);
+    }
   });
 };
 
